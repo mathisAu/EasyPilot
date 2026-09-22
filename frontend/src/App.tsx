@@ -7,18 +7,15 @@ import { RequestsPage } from './pages/RequestsPage';
 import { DocumentTypesPage } from './pages/DocumentTypesPage';
 import { OrganizationsPage } from './pages/OrganizationsPage';
 import { LoginPage } from './pages/LoginPage';
-import { RequestWizard } from './modals/RequestWizard';
-import type { RequestWizardResult } from './modals/RequestWizard';
-import { RequestDetailDrawer } from './modals/RequestDetailDrawer';
 import { DocumentTypeDrawer } from './modals/DocumentTypeDrawer';
 import { DocumentTypeFormModal } from './modals/DocumentTypeFormModal';
+import { DocumentReviewModal } from './modals/DocumentReviewModal';
 import { OrganizationDrawer } from './modals/OrganizationDrawer';
 import { AddOrganizationModal } from './modals/AddOrganizationModal';
 import { ClientPortal } from './client/ClientPortal';
-import { initialRequests } from './data';
-import type { DocumentRequest, DocumentType, Organization, PageKey, RequestStatus } from './types';
+import type { DocumentType, Organization, PageKey, RequestStatus } from './types';
 import { AuthProvider, useAuth } from './auth/AuthContext';
-import { listDocumentTypes, updateDocumentType, deleteDocumentType } from './api/documentTypes';
+import { listDocumentTypes, deleteDocumentType } from './api/documentTypes';
 import { listOrganizations } from './api/organizations';
 import { ApiError } from './api/client';
 
@@ -60,16 +57,14 @@ function AppShell() {
   const [statusFilter, setStatusFilter] = useState<RequestStatus | null>(null);
   const [toast, setToast] = useState('');
 
-  const [requests, setRequests] = useState<DocumentRequest[]>(initialRequests);
   const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
 
-  const [showWizard, setShowWizard] = useState(false);
   const [showAddOrganization, setShowAddOrganization] = useState(false);
   const [showTypeForm, setShowTypeForm] = useState(false);
   const [editingType, setEditingType] = useState<DocumentType | null>(null);
-  const [viewingRequest, setViewingRequest] = useState<DocumentRequest | null>(null);
   const [viewingType, setViewingType] = useState<DocumentType | null>(null);
+  const [reviewingType, setReviewingType] = useState<DocumentType | null>(null);
   const [viewingOrganization, setViewingOrganization] = useState<Organization | null>(null);
 
   function notify(message: string) {
@@ -91,43 +86,6 @@ function AppShell() {
     setMobileOpen(false);
   }
 
-  function handleWizardSubmit(result: RequestWizardResult) {
-    const newRequest: DocumentRequest = {
-      id: crypto.randomUUID(),
-      customer: result.customer,
-      type: result.type,
-      provider: result.provider,
-      date: 'Vandaag',
-      status: 'Aangeleverd',
-      tone: 'slate',
-      exampleCount: result.exampleCount,
-      fields: result.fields,
-    };
-    setRequests((current) => [newRequest, ...current]);
-    setShowWizard(false);
-    navigate('Documentaanvragen');
-    notify(`Nieuwe documentaanvraag voor ${result.customer} toegevoegd`);
-  }
-
-  async function handleToggleLive(id: number, live: boolean) {
-    const item = documentTypes.find((type) => type.id === id);
-    if (!item) return;
-
-    try {
-      const updated = await updateDocumentType(id, {
-        name: item.name,
-        provider: item.provider,
-        live,
-        fields: item.fieldList,
-      });
-      setDocumentTypes((current) => current.map((type) => (type.id === id ? updated : type)));
-      setViewingType((current) => (current && current.id === id ? updated : current));
-      notify(`${updated.name} · ${updated.provider} is nu ${live ? 'live' : 'in inleren'}`);
-    } catch (err) {
-      notify(err instanceof ApiError ? err.message : 'Bijwerken is niet gelukt.');
-    }
-  }
-
   function handleOpenCreateType() {
     setEditingType(null);
     setShowTypeForm(true);
@@ -146,6 +104,12 @@ function AppShell() {
     });
     setShowTypeForm(false);
     notify(mode === 'create' ? `${type.name} · ${type.provider} toegevoegd` : `${type.name} · ${type.provider} bijgewerkt`);
+  }
+
+  function handleStatusChanged(type: DocumentType) {
+    setDocumentTypes((current) => current.map((item) => (item.id === type.id ? type : item)));
+    setReviewingType(type);
+    notify(`${type.name} · ${type.provider} is nu ${type.status}`);
   }
 
   async function handleDeleteType(id: number) {
@@ -184,7 +148,7 @@ function AppShell() {
   function renderPage() {
     switch (active) {
       case 'Dashboard':
-        return <DashboardPage requests={requests} onAddRequest={() => setShowWizard(true)} onNavigate={navigate} />;
+        return <DashboardPage types={documentTypes} onAddType={handleOpenCreateType} onNavigate={navigate} />;
       case 'Documenttypes':
         return (
           <DocumentTypesPage
@@ -193,7 +157,6 @@ function AppShell() {
             onView={setViewingType}
             onEdit={handleOpenEditType}
             onDelete={handleDeleteType}
-            onToggleLive={handleToggleLive}
           />
         );
       case 'Organisaties':
@@ -208,13 +171,12 @@ function AppShell() {
       default:
         return (
           <RequestsPage
-            requests={requests}
+            types={documentTypes}
             search={search}
             onSearchChange={setSearch}
             statusFilter={statusFilter}
             onToggleStatusFilter={handleToggleStatusFilter}
-            onAddRequest={() => setShowWizard(true)}
-            onViewRequest={setViewingRequest}
+            onViewType={setReviewingType}
           />
         );
     }
@@ -222,7 +184,7 @@ function AppShell() {
 
   return (
     <div className="app-shell">
-      <Sidebar active={active} mobileOpen={mobileOpen} requestCount={requests.length} onNavigate={navigate} />
+      <Sidebar active={active} mobileOpen={mobileOpen} requestCount={documentTypes.length} onNavigate={navigate} />
 
       <main className="main-content">
         <Topbar active={active} onToggleMobileNav={() => setMobileOpen((open) => !open)} onLogout={logout} />
@@ -231,7 +193,6 @@ function AppShell() {
         </div>
       </main>
 
-      {showWizard && <RequestWizard onClose={() => setShowWizard(false)} onSubmit={handleWizardSubmit} />}
       {showAddOrganization && (
         <AddOrganizationModal onClose={() => setShowAddOrganization(false)} onSubmit={handleAddOrganization} />
       )}
@@ -243,15 +204,20 @@ function AppShell() {
           onSaved={handleTypeSaved}
         />
       )}
-      {viewingRequest && <RequestDetailDrawer request={viewingRequest} onClose={() => setViewingRequest(null)} />}
       {viewingType && (
         <DocumentTypeDrawer
           documentType={viewingType}
           onClose={() => setViewingType(null)}
-          onToggleLive={handleToggleLive}
           onEdit={handleOpenEditType}
           onDelete={handleDeleteType}
           onDocumentCountChange={handleDocumentCountChange}
+        />
+      )}
+      {reviewingType && (
+        <DocumentReviewModal
+          documentType={reviewingType}
+          onClose={() => setReviewingType(null)}
+          onStatusChanged={handleStatusChanged}
         />
       )}
       {viewingOrganization && (

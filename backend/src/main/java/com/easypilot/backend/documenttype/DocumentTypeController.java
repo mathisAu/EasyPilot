@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -50,6 +51,12 @@ public class DocumentTypeController {
     @PreAuthorize("hasRole('ADMIN')")
     public DocumentTypeDto update(@PathVariable Long id, @Valid @RequestBody DocumentTypeRequest request) {
         return service.update(id, request);
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public DocumentTypeDto changeStatus(@PathVariable Long id, @Valid @RequestBody DocumentTypeStatusRequest request) {
+        return service.changeStatus(id, request.status());
     }
 
     @DeleteMapping("/{id}")

@@ -81,7 +81,7 @@ export function ClientTypeWizard({ onClose, onSubmitted }: ClientTypeWizardProps
       const created = await createDocumentType({
         name: type.trim(),
         provider: provider.trim(),
-        live: false,
+        status: 'Aangeleverd',
         fields: selectedFieldLabels,
       });
       await Promise.all(files.map((file) => uploadDocument(created.id, file)));

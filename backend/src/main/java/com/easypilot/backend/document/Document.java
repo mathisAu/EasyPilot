@@ -1,18 +1,26 @@
 package com.easypilot.backend.document;
 
 import com.easypilot.backend.documenttype.DocumentType;
+import com.easypilot.backend.extraction.ExtractedField;
+import com.easypilot.backend.extraction.ExtractionStatus;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "documents")
@@ -40,6 +48,16 @@ public class Document {
 
     @Column(nullable = false)
     private Instant uploadedAt;
+
+    @OneToMany(mappedBy = "document", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ExtractedField> extractedFields = new ArrayList<>();
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ExtractionStatus extractionStatus = ExtractionStatus.PENDING;
+
+    @Column(columnDefinition = "CLOB")
+    private String extractionError;
 
     @PrePersist
     void onCreate() {
@@ -96,5 +114,25 @@ public class Document {
 
     public Instant getUploadedAt() {
         return uploadedAt;
+    }
+
+    public List<ExtractedField> getExtractedFields() {
+        return extractedFields;
+    }
+
+    public ExtractionStatus getExtractionStatus() {
+        return extractionStatus;
+    }
+
+    public void setExtractionStatus(ExtractionStatus extractionStatus) {
+        this.extractionStatus = extractionStatus;
+    }
+
+    public String getExtractionError() {
+        return extractionError;
+    }
+
+    public void setExtractionError(String extractionError) {
+        this.extractionError = extractionError;
     }
 }

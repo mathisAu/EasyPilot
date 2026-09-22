@@ -1,11 +1,11 @@
 import { apiFetch } from './client';
-import type { DocumentFile, DocumentType } from '../types';
+import type { DocumentFile, DocumentType, ExtractedField, RequestStatus } from '../types';
 
 interface BackendDocumentTypeDto {
   id: number;
   name: string;
   provider: string;
-  live: boolean;
+  status: string;
   fields: string[];
   documentCount: number;
   organizationId: number | null;
@@ -22,12 +22,41 @@ interface BackendDocumentDto {
   sizeBytes: number;
   uploadedAt: string;
   downloadUrl: string;
+  extractionStatus: DocumentFile['extractionStatus'];
+  extractionError: string | null;
 }
+
+interface BackendExtractedFieldDto {
+  fieldName: string;
+  value: string | null;
+  edited: boolean;
+  updatedAt: string;
+}
+
+const STATUS_FROM_BACKEND: Record<string, RequestStatus> = {
+  AANGELEVERD: 'Aangeleverd',
+  IN_BEOORDELING: 'In beoordeling',
+  INLEREN: 'Inleren',
+  TESTEN: 'Testen',
+  CORRECTIE_NODIG: 'Correctie nodig',
+  GOEDGEKEURD: 'Goedgekeurd',
+  LIVE: 'Live',
+};
+
+const STATUS_TO_BACKEND: Record<RequestStatus, string> = {
+  Aangeleverd: 'AANGELEVERD',
+  'In beoordeling': 'IN_BEOORDELING',
+  Inleren: 'INLEREN',
+  Testen: 'TESTEN',
+  'Correctie nodig': 'CORRECTIE_NODIG',
+  Goedgekeurd: 'GOEDGEKEURD',
+  Live: 'LIVE',
+};
 
 export interface DocumentTypeInput {
   name: string;
   provider: string;
-  live: boolean;
+  status: RequestStatus;
   fields: string[];
 }
 
@@ -36,7 +65,7 @@ function mapType(dto: BackendDocumentTypeDto): DocumentType {
     id: dto.id,
     name: dto.name,
     provider: dto.provider,
-    live: dto.live,
+    status: STATUS_FROM_BACKEND[dto.status] ?? 'Aangeleverd',
     fieldList: dto.fields,
     examples: dto.documentCount,
     organizationId: dto.organizationId,
@@ -55,6 +84,26 @@ function mapDocument(dto: BackendDocumentDto): DocumentFile {
     sizeBytes: dto.sizeBytes,
     uploadedAt: dto.uploadedAt,
     downloadUrl: dto.downloadUrl,
+    extractionStatus: dto.extractionStatus,
+    extractionError: dto.extractionError,
+  };
+}
+
+function mapExtractedField(dto: BackendExtractedFieldDto): ExtractedField {
+  return {
+    fieldName: dto.fieldName,
+    value: dto.value,
+    edited: dto.edited,
+    updatedAt: dto.updatedAt,
+  };
+}
+
+function toBackendInput(input: DocumentTypeInput) {
+  return {
+    name: input.name,
+    provider: input.provider,
+    status: STATUS_TO_BACKEND[input.status],
+    fields: input.fields,
   };
 }
 
@@ -64,12 +113,23 @@ export async function listDocumentTypes(): Promise<DocumentType[]> {
 }
 
 export async function createDocumentType(input: DocumentTypeInput): Promise<DocumentType> {
-  const result = await apiFetch<BackendDocumentTypeDto>('/api/document-types', { method: 'POST', json: input });
+  const result = await apiFetch<BackendDocumentTypeDto>('/api/document-types', { method: 'POST', json: toBackendInput(input) });
   return mapType(result);
 }
 
 export async function updateDocumentType(id: number, input: DocumentTypeInput): Promise<DocumentType> {
-  const result = await apiFetch<BackendDocumentTypeDto>(`/api/document-types/${id}`, { method: 'PUT', json: input });
+  const result = await apiFetch<BackendDocumentTypeDto>(`/api/document-types/${id}`, {
+    method: 'PUT',
+    json: toBackendInput(input),
+  });
+  return mapType(result);
+}
+
+export async function updateDocumentTypeStatus(id: number, status: RequestStatus): Promise<DocumentType> {
+  const result = await apiFetch<BackendDocumentTypeDto>(`/api/document-types/${id}/status`, {
+    method: 'PATCH',
+    json: { status: STATUS_TO_BACKEND[status] },
+  });
   return mapType(result);
 }
 
@@ -98,4 +158,28 @@ export async function deleteDocument(id: number): Promise<void> {
 
 export function downloadUrl(id: number): string {
   return `/api/documents/${id}/download`;
+}
+
+export function previewUrl(id: number): string {
+  return `/api/documents/${id}/download?disposition=inline`;
+}
+
+export async function getExtractedFields(documentId: number): Promise<ExtractedField[]> {
+  const result = await apiFetch<BackendExtractedFieldDto[]>(`/api/documents/${documentId}/extracted-fields`);
+  return result.map(mapExtractedField);
+}
+
+export async function updateExtractedFields(
+  documentId: number,
+  fields: { fieldName: string; value: string }[]
+): Promise<ExtractedField[]> {
+  const result = await apiFetch<BackendExtractedFieldDto[]>(`/api/documents/${documentId}/extracted-fields`, {
+    method: 'PUT',
+    json: fields,
+  });
+  return result.map(mapExtractedField);
+}
+
+export async function retryExtraction(documentId: number): Promise<void> {
+  await apiFetch<void>(`/api/documents/${documentId}/extract`, { method: 'POST' });
 }

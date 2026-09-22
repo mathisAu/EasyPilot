@@ -46,7 +46,7 @@ public class DocumentTypeService {
                 throw new ResourceNotFoundException("Geen organisatie gekoppeld aan dit account");
             }
             type.setOrganization(organization);
-            type.setLive(false);
+            type.setStatus(RequestStatus.AANGELEVERD);
         }
 
         return DocumentTypeDto.from(repository.save(type));
@@ -57,6 +57,14 @@ public class DocumentTypeService {
         DocumentType type = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Documenttype niet gevonden"));
         applyRequest(type, request);
+        return DocumentTypeDto.from(repository.save(type));
+    }
+
+    @Transactional
+    public DocumentTypeDto changeStatus(Long id, RequestStatus status) {
+        DocumentType type = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Documenttype niet gevonden"));
+        type.setStatus(status);
         return DocumentTypeDto.from(repository.save(type));
     }
 
@@ -93,7 +101,7 @@ public class DocumentTypeService {
     private void applyRequest(DocumentType type, DocumentTypeRequest request) {
         type.setName(request.name());
         type.setProvider(request.provider());
-        type.setLive(request.live());
+        type.setStatus(request.status() != null ? request.status() : RequestStatus.AANGELEVERD);
         type.getFields().clear();
         if (request.fields() != null) {
             type.getFields().addAll(request.fields());

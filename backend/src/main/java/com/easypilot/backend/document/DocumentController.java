@@ -1,7 +1,11 @@
 package com.easypilot.backend.document;
 
+import com.easypilot.backend.extraction.ExtractedFieldDto;
+import com.easypilot.backend.extraction.ExtractedFieldUpdateRequest;
+import com.easypilot.backend.extraction.ExtractionService;
 import com.easypilot.backend.user.AppUser;
 import com.easypilot.backend.user.CurrentUserService;
+import jakarta.validation.Valid;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -14,6 +18,8 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,17 +32,22 @@ public class DocumentController {
 
     private final DocumentService service;
     private final CurrentUserService currentUserService;
+    private final ExtractionService extractionService;
 
-    public DocumentController(DocumentService service, CurrentUserService currentUserService) {
+    public DocumentController(DocumentService service, CurrentUserService currentUserService,
+                               ExtractionService extractionService) {
         this.service = service;
         this.currentUserService = currentUserService;
+        this.extractionService = extractionService;
     }
 
     @PostMapping(value = "/api/document-types/{typeId}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DocumentDto> upload(@PathVariable Long typeId, @RequestParam("file") MultipartFile file,
                                                Authentication authentication) {
         AppUser currentUser = currentUserService.require(authentication);
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.upload(typeId, file, currentUser));
+        DocumentDto result = service.upload(typeId, file, currentUser);
+        extractionService.extractAsync(result.id());
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
     @GetMapping("/api/document-types/{typeId}/documents")
@@ -45,16 +56,41 @@ public class DocumentController {
     }
 
     @GetMapping("/api/documents/{id}/download")
-    public ResponseEntity<Resource> download(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<Resource> download(@PathVariable Long id,
+                                              @RequestParam(defaultValue = "attachment") String disposition,
+                                              Authentication authentication) {
         AppUser currentUser = currentUserService.require(authentication);
         DocumentService.DownloadPayload payload = service.loadForDownload(id, currentUser);
-        ContentDisposition disposition = ContentDisposition.attachment()
+        ContentDisposition.Builder builder = "inline".equalsIgnoreCase(disposition)
+                ? ContentDisposition.inline()
+                : ContentDisposition.attachment();
+        ContentDisposition contentDisposition = builder
                 .filename(payload.document().getOriginalFilename(), StandardCharsets.UTF_8)
                 .build();
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
                 .contentType(MediaType.parseMediaType(payload.document().getContentType()))
                 .body(payload.resource());
+    }
+
+    @GetMapping("/api/documents/{id}/extracted-fields")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<ExtractedFieldDto> getExtractedFields(@PathVariable Long id) {
+        return service.getExtractedFields(id);
+    }
+
+    @PutMapping("/api/documents/{id}/extracted-fields")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<ExtractedFieldDto> updateExtractedFields(@PathVariable Long id,
+                                                          @Valid @RequestBody List<ExtractedFieldUpdateRequest> updates) {
+        return service.updateExtractedFields(id, updates);
+    }
+
+    @PostMapping("/api/documents/{id}/extract")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> retryExtraction(@PathVariable Long id) {
+        extractionService.extractAsync(id);
+        return ResponseEntity.accepted().build();
     }
 
     @DeleteMapping("/api/documents/{id}")

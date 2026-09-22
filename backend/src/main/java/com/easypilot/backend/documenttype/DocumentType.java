@@ -7,6 +7,8 @@ import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -38,7 +40,8 @@ public class DocumentType {
     private String provider;
 
     @Column(nullable = false)
-    private boolean live = false;
+    @Enumerated(EnumType.STRING)
+    private RequestStatus status = RequestStatus.AANGELEVERD;
 
     @ElementCollection
     @CollectionTable(name = "document_type_fields", joinColumns = @JoinColumn(name = "document_type_id"))
@@ -93,12 +96,12 @@ public class DocumentType {
         this.provider = provider;
     }
 
-    public boolean isLive() {
-        return live;
+    public RequestStatus getStatus() {
+        return status;
     }
 
-    public void setLive(boolean live) {
-        this.live = live;
+    public void setStatus(RequestStatus status) {
+        this.status = status;
     }
 
     public List<String> getFields() {

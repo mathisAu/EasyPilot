@@ -9,7 +9,9 @@ public record DocumentDto(
         String contentType,
         long sizeBytes,
         Instant uploadedAt,
-        String downloadUrl
+        String downloadUrl,
+        String extractionStatus,
+        String extractionError
 ) {
 
     public static DocumentDto from(Document entity) {
@@ -20,7 +22,9 @@ public record DocumentDto(
                 entity.getContentType(),
                 entity.getSizeBytes(),
                 entity.getUploadedAt(),
-                "/api/documents/" + entity.getId() + "/download"
+                "/api/documents/" + entity.getId() + "/download",
+                entity.getExtractionStatus().name(),
+                entity.getExtractionError()
         );
     }
 }

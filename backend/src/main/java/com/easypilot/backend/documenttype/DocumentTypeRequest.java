@@ -7,7 +7,7 @@ import java.util.List;
 public record DocumentTypeRequest(
         @NotBlank(message = "Naam is verplicht") String name,
         @NotBlank(message = "Provider is verplicht") String provider,
-        boolean live,
+        RequestStatus status,
         List<String> fields
 ) {
 }

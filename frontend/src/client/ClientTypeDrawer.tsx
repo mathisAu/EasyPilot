@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { FileText, Upload } from 'lucide-react';
+import { Check, FileText, Upload } from 'lucide-react';
 import { Drawer } from '../components/Drawer';
 import { StatusPill } from '../components/StatusPill';
+import { STAGE_ORDER, toneFor } from '../data';
 import { downloadUrl, listDocuments, uploadDocument } from '../api/documentTypes';
 import { ApiError } from '../api/client';
 import type { DocumentFile, DocumentType } from '../types';
@@ -77,11 +78,23 @@ export function ClientTypeDrawer({ documentType, onClose, onDocumentCountChange 
         </div>
         <div>
           <span>Status</span>
-          <StatusPill tone={documentType.live ? 'green' : 'amber'}>
-            {documentType.live ? 'Live' : 'Wordt ingeleerd'}
-          </StatusPill>
+          <StatusPill tone={toneFor(documentType.status)}>{documentType.status}</StatusPill>
         </div>
       </div>
+
+      <h3 className="drawer-subheading">Voortgang</h3>
+      <ol className="progress-timeline">
+        {STAGE_ORDER.map((label, index) => {
+          const currentIndex = STAGE_ORDER.indexOf(documentType.status);
+          const state = index < currentIndex ? 'done' : index === currentIndex ? 'current' : 'upcoming';
+          return (
+            <li key={label} className={state}>
+              <span className="progress-marker">{state === 'done' ? <Check size={12} /> : index + 1}</span>
+              <span>{label}</span>
+            </li>
+          );
+        })}
+      </ol>
 
       <h3 className="drawer-subheading">Gewenste velden</h3>
       <div className="field-chip-list">

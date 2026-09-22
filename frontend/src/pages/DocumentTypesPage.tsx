@@ -1,6 +1,6 @@
 import { ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react';
 import { StatusPill } from '../components/StatusPill';
-import { Toggle } from '../components/Toggle';
+import { toneFor } from '../data';
 import type { DocumentType } from '../types';
 
 interface DocumentTypesPageProps {
@@ -9,10 +9,9 @@ interface DocumentTypesPageProps {
   onView: (type: DocumentType) => void;
   onEdit: (type: DocumentType) => void;
   onDelete: (id: number) => void;
-  onToggleLive: (id: number, live: boolean) => void;
 }
 
-export function DocumentTypesPage({ types, onAdd, onView, onEdit, onDelete, onToggleLive }: DocumentTypesPageProps) {
+export function DocumentTypesPage({ types, onAdd, onView, onEdit, onDelete }: DocumentTypesPageProps) {
   return (
     <>
       <section className="page-heading">
@@ -31,14 +30,7 @@ export function DocumentTypesPage({ types, onAdd, onView, onEdit, onDelete, onTo
           <article className="type-card" key={item.id}>
             <div className="type-card-top">
               <span className="customer-logo">{item.provider[0]}</span>
-              <div className="type-card-switch">
-                <Toggle
-                  checked={item.live}
-                  onChange={(checked) => onToggleLive(item.id, checked)}
-                  label={`${item.name} ${item.provider} live zetten`}
-                />
-                <StatusPill tone={item.live ? 'green' : 'amber'}>{item.live ? 'Live' : 'Inleren'}</StatusPill>
-              </div>
+              <StatusPill tone={toneFor(item.status)}>{item.status}</StatusPill>
             </div>
             <h2>{item.name}</h2>
             <p>{item.provider}</p>

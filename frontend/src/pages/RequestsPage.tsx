@@ -1,38 +1,47 @@
 import { useMemo } from 'react';
-import { ChevronRight, Eye, FileCheck2, FileText, Plus, Search, Sparkles, SlidersHorizontal, X } from 'lucide-react';
+import { Eye, FileCheck2, FileText, Search, Sparkles, SlidersHorizontal, X } from 'lucide-react';
 import { Metric } from '../components/Metric';
 import { StatusPill } from '../components/StatusPill';
-import { stages } from '../data';
-import type { DocumentRequest, RequestStatus } from '../types';
+import { stages, toneFor } from '../data';
+import type { DocumentType, RequestStatus } from '../types';
 
 interface RequestsPageProps {
-  requests: DocumentRequest[];
+  types: DocumentType[];
   search: string;
   onSearchChange: (value: string) => void;
   statusFilter: RequestStatus | null;
   onToggleStatusFilter: (label: RequestStatus) => void;
-  onAddRequest: () => void;
-  onViewRequest: (request: DocumentRequest) => void;
+  onViewType: (type: DocumentType) => void;
+}
+
+function formatDate(value?: string): string {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString('nl-NL');
 }
 
 export function RequestsPage({
-  requests,
+  types,
   search,
   onSearchChange,
   statusFilter,
   onToggleStatusFilter,
-  onAddRequest,
-  onViewRequest,
+  onViewType,
 }: RequestsPageProps) {
-  const filteredRequests = useMemo(
+  const filteredTypes = useMemo(
     () =>
-      requests
-        .filter((request) =>
-          `${request.customer} ${request.provider} ${request.type}`.toLowerCase().includes(search.toLowerCase()),
+      types
+        .filter((type) =>
+          `${type.organizationName ?? ''} ${type.provider} ${type.name}`.toLowerCase().includes(search.toLowerCase())
         )
-        .filter((request) => !statusFilter || request.status === statusFilter),
-    [requests, search, statusFilter],
+        .filter((type) => !statusFilter || type.status === statusFilter),
+    [types, search, statusFilter]
   );
+
+  const inBehandeling = types.filter((type) =>
+    (['In beoordeling', 'Inleren', 'Testen', 'Correctie nodig'] as RequestStatus[]).includes(type.status)
+  ).length;
+  const goedgekeurd = types.filter((type) => type.status === 'Goedgekeurd').length;
+  const live = types.filter((type) => type.status === 'Live').length;
 
   return (
     <>
@@ -42,16 +51,13 @@ export function RequestsPage({
           <h1>Documentaanvragen</h1>
           <p className="page-description">Alle aangeleverde documenttypes op één plek.</p>
         </div>
-        <button className="primary-button" onClick={onAddRequest}>
-          <Plus size={18} /> Nieuwe aanvraag
-        </button>
       </section>
 
       <section className="metrics-grid" aria-label="Overzicht aanvragen">
-        <Metric icon={FileText} label="Open aanvragen" value={requests.length + 8} note="+3 deze week" />
-        <Metric icon={Search} label="In behandeling" value="6" note="50% van totaal" tone="blue" />
-        <Metric icon={Sparkles} label="Actieve documenttypes" value="8" note="+2 deze maand" tone="amber" />
-        <Metric icon={FileCheck2} label="Live bij klanten" value="4" note="100% uptime" tone="green" />
+        <Metric icon={FileText} label="Totaal aanvragen" value={types.length} note="Alle documenttypes" />
+        <Metric icon={Search} label="In behandeling" value={inBehandeling} note="In beoordeling t/m correctie" tone="blue" />
+        <Metric icon={Sparkles} label="Goedgekeurd" value={goedgekeurd} note="Klaar voor live" tone="amber" />
+        <Metric icon={FileCheck2} label="Live bij klanten" value={live} note="Automatisch verwerkt" tone="green" />
       </section>
 
       <section className="process-band">
@@ -73,7 +79,7 @@ export function RequestsPage({
                 <stage.icon size={17} />
               </div>
               <div className="stage-copy">
-                <strong>{stage.value}</strong>
+                <strong>{types.filter((type) => type.status === stage.label).length}</strong>
                 <span>{stage.label}</span>
               </div>
               {index < stages.length - 1 && <div className="stage-line" />}
@@ -116,7 +122,7 @@ export function RequestsPage({
             </button>
           )}
           <span className="result-count">
-            {filteredRequests.length} van {requests.length} aanvragen
+            {filteredTypes.length} van {types.length} aanvragen
           </span>
         </div>
 
@@ -125,7 +131,7 @@ export function RequestsPage({
             <thead>
               <tr>
                 <th>Klant</th>
-                <th>Leverancier</th>
+                <th>Opdrachtgever</th>
                 <th>Documenttype</th>
                 <th>Aangeleverd</th>
                 <th>Status</th>
@@ -133,25 +139,25 @@ export function RequestsPage({
               </tr>
             </thead>
             <tbody>
-              {filteredRequests.map((request) => (
-                <tr key={request.id}>
+              {filteredTypes.map((type) => (
+                <tr key={type.id}>
                   <td>
                     <div className="customer-cell">
-                      <span className="customer-logo">{request.provider.slice(0, 1)}</span>
-                      <strong>{request.customer}</strong>
+                      <span className="customer-logo">{type.provider.slice(0, 1)}</span>
+                      <strong>{type.organizationName ?? '—'}</strong>
                     </div>
                   </td>
-                  <td>{request.provider}</td>
-                  <td>{request.type}</td>
-                  <td>{request.date}</td>
+                  <td>{type.provider}</td>
+                  <td>{type.name}</td>
+                  <td>{formatDate(type.createdAt)}</td>
                   <td>
-                    <StatusPill tone={request.tone}>{request.status}</StatusPill>
+                    <StatusPill tone={toneFor(type.status)}>{type.status}</StatusPill>
                   </td>
                   <td>
                     <button
                       className="row-action"
-                      onClick={() => onViewRequest(request)}
-                      aria-label={`Bekijk ${request.customer}`}
+                      onClick={() => onViewType(type)}
+                      aria-label={`Bekijk ${type.name}`}
                       title="Bekijken"
                     >
                       <Eye size={16} />
@@ -162,7 +168,7 @@ export function RequestsPage({
             </tbody>
           </table>
 
-          {filteredRequests.length === 0 && (
+          {filteredTypes.length === 0 && (
             <div className="empty-state">
               <Search size={22} />
               <strong>Geen aanvragen gevonden</strong>
@@ -170,19 +176,6 @@ export function RequestsPage({
             </div>
           )}
         </div>
-      </section>
-
-      <section className="callout">
-        <div className="callout-icon">
-          <Sparkles size={21} />
-        </div>
-        <div>
-          <strong>Maak documentverwerking slimmer</strong>
-          <p>Lever voorbeelden aan, leer het documenttype in en laat EasyPilot de rest doen.</p>
-        </div>
-        <button className="secondary-button" onClick={onAddRequest}>
-          Start een aanvraag <ChevronRight size={16} />
-        </button>
       </section>
     </>
   );

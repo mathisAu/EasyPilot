@@ -25,18 +25,6 @@ export interface FieldOption {
   example: string;
 }
 
-export interface DocumentRequest {
-  id: string;
-  customer: string;
-  type: string;
-  provider: string;
-  date: string;
-  status: RequestStatus;
-  tone: Tone;
-  exampleCount: number;
-  fields: string[];
-}
-
 export interface Stage {
   label: RequestStatus;
   value: number;
@@ -49,7 +37,7 @@ export interface DocumentType {
   name: string;
   provider: string;
   examples: number;
-  live: boolean;
+  status: RequestStatus;
   fieldList: string[];
   organizationId?: number | null;
   organizationName?: string | null;
@@ -65,6 +53,15 @@ export interface DocumentFile {
   sizeBytes: number;
   uploadedAt: string;
   downloadUrl: string;
+  extractionStatus: 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'FAILED' | 'SKIPPED';
+  extractionError: string | null;
+}
+
+export interface ExtractedField {
+  fieldName: string;
+  value: string | null;
+  edited: boolean;
+  updatedAt: string;
 }
 
 export interface Organization {

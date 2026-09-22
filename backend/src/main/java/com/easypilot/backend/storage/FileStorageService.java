@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
@@ -62,6 +63,14 @@ public class FileStorageService {
             return resource;
         } catch (MalformedURLException e) {
             throw new ResourceNotFoundException("Bestand niet gevonden");
+        }
+    }
+
+    public byte[] readAllBytes(String storedFilename) {
+        try (InputStream in = loadAsResource(storedFilename).getInputStream()) {
+            return in.readAllBytes();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Kon bestand niet lezen voor extractie", e);
         }
     }
 

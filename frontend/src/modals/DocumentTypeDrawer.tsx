@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { FileText, Pencil, Trash2, Upload, X } from 'lucide-react';
 import { Drawer } from '../components/Drawer';
 import { StatusPill } from '../components/StatusPill';
-import { Toggle } from '../components/Toggle';
+import { toneFor } from '../data';
 import { deleteDocument, downloadUrl, listDocuments, uploadDocument } from '../api/documentTypes';
 import { ApiError } from '../api/client';
 import type { DocumentFile, DocumentType } from '../types';
@@ -10,7 +10,6 @@ import type { DocumentFile, DocumentType } from '../types';
 interface DocumentTypeDrawerProps {
   documentType: DocumentType;
   onClose: () => void;
-  onToggleLive: (id: number, live: boolean) => void;
   onEdit: (type: DocumentType) => void;
   onDelete: (id: number) => void;
   onDocumentCountChange: (typeId: number, count: number) => void;
@@ -25,7 +24,6 @@ function formatFileSize(bytes: number): string {
 export function DocumentTypeDrawer({
   documentType,
   onClose,
-  onToggleLive,
   onEdit,
   onDelete,
   onDocumentCountChange,
@@ -101,9 +99,7 @@ export function DocumentTypeDrawer({
         </div>
         <div>
           <span>Status</span>
-          <StatusPill tone={documentType.live ? 'green' : 'amber'}>
-            {documentType.live ? 'Live' : 'Inleren'}
-          </StatusPill>
+          <StatusPill tone={toneFor(documentType.status)}>{documentType.status}</StatusPill>
         </div>
       </div>
 
@@ -114,18 +110,6 @@ export function DocumentTypeDrawer({
         <button type="button" className="danger-button" onClick={() => onDelete(documentType.id)}>
           <Trash2 size={16} /> Verwijderen
         </button>
-      </div>
-
-      <div className="drawer-toggle-row">
-        <div>
-          <strong>Documenttype live zetten</strong>
-          <small>Zet dit documenttype aan of uit voor automatische verwerking.</small>
-        </div>
-        <Toggle
-          checked={documentType.live}
-          onChange={(checked) => onToggleLive(documentType.id, checked)}
-          label={`${documentType.name} live zetten`}
-        />
       </div>
 
       <h3 className="drawer-subheading">Uitgelezen velden</h3>
@@ -167,6 +151,12 @@ export function DocumentTypeDrawer({
               <a className="file-name" href={downloadUrl(doc.id)} target="_blank" rel="noreferrer">
                 {doc.filename}
               </a>
+              {doc.extractionStatus === 'FAILED' && (
+                <span className="file-size" title={doc.extractionError ?? ''}>
+                  Extractie mislukt
+                </span>
+              )}
+              {doc.extractionStatus === 'IN_PROGRESS' && <span className="file-size">Extractie bezig...</span>}
               <span className="file-size">{formatFileSize(doc.sizeBytes)}</span>
               <button type="button" onClick={() => handleDeleteDocument(doc.id)} aria-label={`Verwijder ${doc.filename}`}>
                 <X size={14} />

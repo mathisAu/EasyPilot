@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { Plus, Save, X } from 'lucide-react';
-import { Toggle } from '../components/Toggle';
 import { createDocumentType, updateDocumentType } from '../api/documentTypes';
 import { ApiError } from '../api/client';
-import type { DocumentType } from '../types';
+import { STAGE_ORDER } from '../data';
+import type { DocumentType, RequestStatus } from '../types';
 
 interface DocumentTypeFormModalProps {
   mode: 'create' | 'edit';
@@ -15,7 +15,7 @@ interface DocumentTypeFormModalProps {
 export function DocumentTypeFormModal({ mode, initial, onClose, onSaved }: DocumentTypeFormModalProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [provider, setProvider] = useState(initial?.provider ?? '');
-  const [live, setLive] = useState(initial?.live ?? false);
+  const [status, setStatus] = useState<RequestStatus>(initial?.status ?? 'Aangeleverd');
   const [fields, setFields] = useState<string[]>(initial?.fieldList ?? []);
   const [fieldDraft, setFieldDraft] = useState('');
   const [showFieldInput, setShowFieldInput] = useState(false);
@@ -42,7 +42,7 @@ export function DocumentTypeFormModal({ mode, initial, onClose, onSaved }: Docum
     setSubmitting(true);
     setError('');
     try {
-      const payload = { name: name.trim(), provider: provider.trim(), live, fields };
+      const payload = { name: name.trim(), provider: provider.trim(), status, fields };
       const result = mode === 'create'
         ? await createDocumentType(payload)
         : await updateDocumentType(initial!.id, payload);
@@ -76,13 +76,16 @@ export function DocumentTypeFormModal({ mode, initial, onClose, onSaved }: Docum
           <input value={provider} onChange={(event) => setProvider(event.target.value)} placeholder="Bijv. BMN" />
         </label>
 
-        <div className="drawer-toggle-row">
-          <div>
-            <strong>Live zetten</strong>
-            <small>Zet dit documenttype aan of uit voor automatische verwerking.</small>
-          </div>
-          <Toggle checked={live} onChange={setLive} label="Documenttype live zetten" />
-        </div>
+        <label>
+          Status
+          <select value={status} onChange={(event) => setStatus(event.target.value as RequestStatus)}>
+            {STAGE_ORDER.map((label) => (
+              <option key={label} value={label}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <h3 className="drawer-subheading">Velden</h3>
         <div className="field-chip-list">

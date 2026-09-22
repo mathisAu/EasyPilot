@@ -1,5 +1,6 @@
 import { ChevronRight, FileText, Plus, Sparkles } from 'lucide-react';
 import { StatusPill } from '../components/StatusPill';
+import { toneFor } from '../data';
 import type { DocumentType } from '../types';
 
 interface ClientDocumentsPageProps {
@@ -54,7 +55,7 @@ export function ClientDocumentsPage({ types, loading, onAdd, onView }: ClientDoc
                   <td>{type.provider}</td>
                   <td>{type.examples}</td>
                   <td>
-                    <StatusPill tone={type.live ? 'green' : 'amber'}>{type.live ? 'Live' : 'Wordt ingeleerd'}</StatusPill>
+                    <StatusPill tone={toneFor(type.status)}>{type.status}</StatusPill>
                   </td>
                   <td>
                     <button className="row-action" onClick={() => onView(type)} aria-label={`Bekijk ${type.name}`} title="Bekijken">

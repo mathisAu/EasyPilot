@@ -3,6 +3,10 @@ package com.easypilot.backend.document;
 import com.easypilot.backend.common.ResourceNotFoundException;
 import com.easypilot.backend.documenttype.DocumentType;
 import com.easypilot.backend.documenttype.DocumentTypeService;
+import com.easypilot.backend.extraction.ExtractedField;
+import com.easypilot.backend.extraction.ExtractedFieldDto;
+import com.easypilot.backend.extraction.ExtractedFieldRepository;
+import com.easypilot.backend.extraction.ExtractedFieldUpdateRequest;
 import com.easypilot.backend.storage.FileStorageService;
 import com.easypilot.backend.user.AppUser;
 import org.springframework.core.io.Resource;
@@ -10,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class DocumentService {
@@ -18,13 +24,16 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final DocumentTypeService documentTypeService;
     private final FileStorageService fileStorageService;
+    private final ExtractedFieldRepository extractedFieldRepository;
 
     public DocumentService(DocumentRepository documentRepository,
                             DocumentTypeService documentTypeService,
-                            FileStorageService fileStorageService) {
+                            FileStorageService fileStorageService,
+                            ExtractedFieldRepository extractedFieldRepository) {
         this.documentRepository = documentRepository;
         this.documentTypeService = documentTypeService;
         this.fileStorageService = fileStorageService;
+        this.extractedFieldRepository = extractedFieldRepository;
     }
 
     @Transactional(readOnly = true)
@@ -66,6 +75,30 @@ public class DocumentService {
         Document document = getOrThrow(id);
         fileStorageService.delete(document.getStoredFilename());
         documentRepository.delete(document);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ExtractedFieldDto> getExtractedFields(Long documentId) {
+        getOrThrow(documentId);
+        return extractedFieldRepository.findByDocumentId(documentId).stream().map(ExtractedFieldDto::from).toList();
+    }
+
+    @Transactional
+    public List<ExtractedFieldDto> updateExtractedFields(Long documentId, List<ExtractedFieldUpdateRequest> updates) {
+        getOrThrow(documentId);
+        List<ExtractedField> existing = extractedFieldRepository.findByDocumentId(documentId);
+        Map<String, ExtractedField> byName = new HashMap<>();
+        for (ExtractedField field : existing) {
+            byName.put(field.getFieldName(), field);
+        }
+        for (ExtractedFieldUpdateRequest update : updates) {
+            ExtractedField field = byName.get(update.fieldName());
+            if (field != null) {
+                field.setValue(update.value());
+                field.setEdited(true);
+            }
+        }
+        return existing.stream().map(ExtractedFieldDto::from).toList();
     }
 
     private Document getOrThrow(Long id) {

@@ -1,5 +1,5 @@
 import { FileCheck2, FileText, Search, Sparkles, SlidersHorizontal } from 'lucide-react';
-import type { DocumentRequest, FieldOption, Stage } from './types';
+import type { FieldOption, RequestStatus, Stage, Tone } from './types';
 
 export const STANDARD_FIELDS: FieldOption[] = [
   { key: 'ordernummer', label: 'Ordernummer', example: 'bijv. 458921' },
@@ -42,53 +42,6 @@ export const STAGE_ORDER: Stage['label'][] = [
   'Live',
 ];
 
-export const initialRequests: DocumentRequest[] = [
-  {
-    id: 'req-1',
-    customer: 'Zeelte Transport',
-    type: 'Transportopdracht',
-    provider: 'BMN',
-    date: '14-09-2026',
-    status: 'In beoordeling',
-    tone: 'blue',
-    exampleCount: 7,
-    fields: ['Ordernummer', 'Laaddatum', 'Laadadres', 'Losadres', 'Gewicht'],
-  },
-  {
-    id: 'req-2',
-    customer: 'Van Dijk Logistics',
-    type: 'Transportopdracht',
-    provider: 'DHL',
-    date: '13-09-2026',
-    status: 'Inleren',
-    tone: 'amber',
-    exampleCount: 5,
-    fields: ['Ordernummer', 'Laaddatum', 'Referentie', 'Gewicht', 'Laadmeters'],
-  },
-  {
-    id: 'req-3',
-    customer: 'Koster Transport',
-    type: 'Laadlijst',
-    provider: 'Vos',
-    date: '12-09-2026',
-    status: 'Testen',
-    tone: 'violet',
-    exampleCount: 6,
-    fields: ['Ordernummer', 'Losadres', 'Aantal pallets / colli'],
-  },
-  {
-    id: 'req-4',
-    customer: 'Jansen Transport',
-    type: 'Transportopdracht',
-    provider: 'XPO',
-    date: '10-09-2026',
-    status: 'Aangeleverd',
-    tone: 'slate',
-    exampleCount: 3,
-    fields: ['Ordernummer', 'Laaddatum', 'Laadadres'],
-  },
-];
-
 export const stages: Stage[] = [
   { label: 'Aangeleverd', value: 3, icon: FileText, tone: 'sky' },
   { label: 'In beoordeling', value: 2, icon: Search, tone: 'blue' },
@@ -98,4 +51,8 @@ export const stages: Stage[] = [
   { label: 'Goedgekeurd', value: 4, icon: FileCheck2, tone: 'emerald' },
   { label: 'Live', value: 8, icon: Sparkles, tone: 'blue' },
 ];
+
+export function toneFor(status: RequestStatus): Tone {
+  return stages.find((stage) => stage.label === status)?.tone ?? 'slate';
+}
 

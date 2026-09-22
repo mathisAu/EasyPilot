@@ -1,6 +1,6 @@
 import { ChevronRight, FileCheck2, FileText, Plus, Search, Sparkles } from 'lucide-react';
 import { Metric } from '../components/Metric';
-import type { DocumentRequest, PageKey } from '../types';
+import type { DocumentType, PageKey } from '../types';
 
 interface ActivityRowProps {
   label: string;
@@ -21,12 +21,12 @@ function ActivityRow({ label, detail }: ActivityRowProps) {
 }
 
 interface DashboardPageProps {
-  requests: DocumentRequest[];
-  onAddRequest: () => void;
+  types: DocumentType[];
+  onAddType: () => void;
   onNavigate: (page: PageKey) => void;
 }
 
-export function DashboardPage({ requests, onAddRequest, onNavigate }: DashboardPageProps) {
+export function DashboardPage({ types, onAddType, onNavigate }: DashboardPageProps) {
   return (
     <>
       <section className="page-heading">
@@ -35,13 +35,13 @@ export function DashboardPage({ requests, onAddRequest, onNavigate }: DashboardP
           <h1>Goedemorgen</h1>
           <p className="page-description">Dit is de voortgang van je documentverwerking.</p>
         </div>
-        <button className="primary-button" onClick={onAddRequest}>
-          <Plus size={18} /> Nieuwe aanvraag
+        <button className="primary-button" onClick={onAddType}>
+          <Plus size={18} /> Nieuw documenttype
         </button>
       </section>
 
       <section className="metrics-grid" aria-label="Overzicht aanvragen">
-        <Metric icon={FileText} label="Open aanvragen" value={requests.length + 8} note="+3 deze week" />
+        <Metric icon={FileText} label="Open aanvragen" value={types.length + 8} note="+3 deze week" />
         <Metric icon={Search} label="In behandeling" value="6" note="50% van totaal" tone="blue" />
         <Metric icon={Sparkles} label="Actieve documenttypes" value="8" note="+2 deze maand" tone="amber" />
         <Metric icon={FileCheck2} label="Live bij klanten" value="4" note="100% uptime" tone="green" />
@@ -55,7 +55,7 @@ export function DashboardPage({ requests, onAddRequest, onNavigate }: DashboardP
               <h2>Wat wil je doen?</h2>
             </div>
           </div>
-          <button className="quick-action" onClick={onAddRequest}>
+          <button className="quick-action" onClick={onAddType}>
             <span className="quick-action-icon blue">
               <Plus size={19} />
             </span>
