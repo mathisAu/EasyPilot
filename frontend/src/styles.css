@@ -121,4 +121,19 @@ button { cursor: pointer; }
 .progress-timeline li.current .progress-marker { border-color: #1689e6; color: #1689e6; }
 .field-chip-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .field-chip { padding: 6px 10px; color: #3c5e7e; border-radius: 20px; background: #eef2f6; font-size: 11px; font-weight: 600; }
+.field-chip.removable { display: inline-flex; align-items: center; gap: 6px; }
+.field-chip.removable button { display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: #8496ac; cursor: pointer; }
+.field-chip.removable button:hover { color: #d5573b; }
 @media (max-width: 460px) { .drawer { width: 100%; } .drawer-summary { grid-template-columns: 1fr 1fr; } }
+
+.login-page { min-height: 100vh; display: grid; place-items: center; background: #f4f7fb; }
+.login-card { width: 100%; max-width: 360px; padding: 32px; border: 1px solid #e2e9f0; border-radius: 12px; background: #fff; display: grid; gap: 14px; }
+.login-card h1 { margin: 0; font-size: 22px; }
+.form-error { margin: 0; color: #d5573b; font-size: 12px; font-weight: 600; }
+
+.danger-button { padding: 10px 16px; color: #fff; border: 0; border-radius: 8px; background: #d5573b; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.danger-button:hover:not(:disabled) { background: #b8452c; }
+.danger-button:disabled { opacity: .6; cursor: default; }
+
+.drawer-actions-row { display: flex; gap: 10px; margin-top: 16px; }
+.type-card-actions { display: flex; align-items: center; justify-content: space-between; gap: 4px; }

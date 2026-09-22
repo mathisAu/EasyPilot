@@ -37,7 +37,7 @@ export function OrganizationsPage({ organizations, onAdd, onView }: Organization
             <div>
               <strong>{organization.name}</strong>
               <small>
-                {organization.activeTypes} actieve documenttypes · Laatste activiteit {organization.lastActivity}
+                {organization.documentTypeCount} actieve documenttypes · Login: {organization.customerUsername ?? '—'}
               </small>
             </div>
             <StatusPill tone="green">Actief</StatusPill>

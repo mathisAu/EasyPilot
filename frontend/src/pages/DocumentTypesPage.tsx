@@ -1,4 +1,4 @@
-import { ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react';
 import { StatusPill } from '../components/StatusPill';
 import { Toggle } from '../components/Toggle';
 import type { DocumentType } from '../types';
@@ -7,10 +7,12 @@ interface DocumentTypesPageProps {
   types: DocumentType[];
   onAdd: () => void;
   onView: (type: DocumentType) => void;
-  onToggleLive: (id: string, live: boolean) => void;
+  onEdit: (type: DocumentType) => void;
+  onDelete: (id: number) => void;
+  onToggleLive: (id: number, live: boolean) => void;
 }
 
-export function DocumentTypesPage({ types, onAdd, onView, onToggleLive }: DocumentTypesPageProps) {
+export function DocumentTypesPage({ types, onAdd, onView, onEdit, onDelete, onToggleLive }: DocumentTypesPageProps) {
   return (
     <>
       <section className="page-heading">
@@ -48,9 +50,17 @@ export function DocumentTypesPage({ types, onAdd, onView, onToggleLive }: Docume
                 <strong>{item.fieldList.length}</strong> velden
               </span>
             </div>
-            <button className="text-button" onClick={() => onView(item)}>
-              Openen <ChevronRight size={16} />
-            </button>
+            <div className="type-card-actions">
+              <button className="text-button" onClick={() => onView(item)}>
+                Openen <ChevronRight size={16} />
+              </button>
+              <button className="row-action" onClick={() => onEdit(item)} aria-label={`Bewerk ${item.name}`} title="Bewerken">
+                <Pencil size={16} />
+              </button>
+              <button className="row-action" onClick={() => onDelete(item.id)} aria-label={`Verwijder ${item.name}`} title="Verwijderen">
+                <Trash2 size={16} />
+              </button>
+            </div>
           </article>
         ))}
       </section>

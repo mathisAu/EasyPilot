@@ -427,3 +427,9 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# EasyPilot backend local data (H2 database files, uploaded documents)
+backend/data/
+
+# EasyPilot backend build output
+backend/target/

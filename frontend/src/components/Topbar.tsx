@@ -1,12 +1,12 @@
-import { Bell, ChevronRight, Menu } from 'lucide-react';
-import type { PageKey } from '../types';
+import { Bell, ChevronRight, LogOut, Menu } from 'lucide-react';
 
 interface TopbarProps {
-  active: PageKey;
+  active: string;
   onToggleMobileNav: () => void;
+  onLogout?: () => void;
 }
 
-export function Topbar({ active, onToggleMobileNav }: TopbarProps) {
+export function Topbar({ active, onToggleMobileNav, onLogout }: TopbarProps) {
   return (
     <header className="topbar">
       <button className="icon-button menu-button" onClick={onToggleMobileNav} aria-label="Menu">
@@ -22,6 +22,11 @@ export function Topbar({ active, onToggleMobileNav }: TopbarProps) {
           <Bell size={19} />
           <span className="notification-dot" />
         </button>
+        {onLogout && (
+          <button className="icon-button" aria-label="Uitloggen" title="Uitloggen" onClick={onLogout}>
+            <LogOut size={18} />
+          </button>
+        )}
         <div className="topbar-avatar">MV</div>
       </div>
     </header>

@@ -13,11 +13,11 @@ export function OrganizationDrawer({ organization, onClose }: OrganizationDrawer
       <div className="drawer-summary">
         <div>
           <span>Actieve documenttypes</span>
-          <strong>{organization.activeTypes}</strong>
+          <strong>{organization.documentTypeCount}</strong>
         </div>
         <div>
-          <span>Laatste activiteit</span>
-          <strong>{organization.lastActivity}</strong>
+          <span>Klantportaal-login</span>
+          <strong>{organization.customerUsername ?? '—'}</strong>
         </div>
         <div>
           <span>Status</span>

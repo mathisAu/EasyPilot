@@ -1,5 +1,5 @@
 import { FileCheck2, FileText, Search, Sparkles, SlidersHorizontal } from 'lucide-react';
-import type { DocumentRequest, DocumentType, FieldOption, Organization, Stage } from './types';
+import type { DocumentRequest, FieldOption, Stage } from './types';
 
 export const STANDARD_FIELDS: FieldOption[] = [
   { key: 'ordernummer', label: 'Ordernummer', example: 'bijv. 458921' },
@@ -99,44 +99,3 @@ export const stages: Stage[] = [
   { label: 'Live', value: 8, icon: Sparkles, tone: 'blue' },
 ];
 
-export const documentTypes: DocumentType[] = [
-  {
-    id: 'type-1',
-    name: 'Transportopdracht',
-    provider: 'BMN',
-    examples: 7,
-    live: true,
-    fieldList: ['Ordernummer', 'Laaddatum', 'Laadadres', 'Losadres', 'Gewicht', 'Referentie'],
-  },
-  {
-    id: 'type-2',
-    name: 'Transportopdracht',
-    provider: 'DHL',
-    examples: 5,
-    live: true,
-    fieldList: ['Ordernummer', 'Laaddatum', 'Referentie', 'Gewicht', 'Laadmeters'],
-  },
-  {
-    id: 'type-3',
-    name: 'Laadlijst',
-    provider: 'Vos',
-    examples: 6,
-    live: false,
-    fieldList: ['Ordernummer', 'Losadres', 'Aantal pallets / colli', 'Laadmeters'],
-  },
-  {
-    id: 'type-4',
-    name: 'Transportopdracht',
-    provider: 'XPO',
-    examples: 3,
-    live: false,
-    fieldList: ['Ordernummer', 'Laaddatum', 'Laadadres', 'Losadres', 'Gewicht', 'Referentie', 'Laadmeters'],
-  },
-];
-
-export const organizations: Organization[] = [
-  { id: 'org-1', name: 'Zeelte Transport', activeTypes: 1, lastActivity: 'Vandaag' },
-  { id: 'org-2', name: 'Van Dijk Logistics', activeTypes: 2, lastActivity: 'Vandaag' },
-  { id: 'org-3', name: 'Koster Transport', activeTypes: 3, lastActivity: 'Gisteren' },
-  { id: 'org-4', name: 'Jansen Transport', activeTypes: 4, lastActivity: '2 dagen geleden' },
-];

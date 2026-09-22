@@ -1,18 +1,14 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { FileText, Pencil, Trash2, Upload, X } from 'lucide-react';
+import { FileText, Upload } from 'lucide-react';
 import { Drawer } from '../components/Drawer';
 import { StatusPill } from '../components/StatusPill';
-import { Toggle } from '../components/Toggle';
-import { deleteDocument, downloadUrl, listDocuments, uploadDocument } from '../api/documentTypes';
+import { downloadUrl, listDocuments, uploadDocument } from '../api/documentTypes';
 import { ApiError } from '../api/client';
 import type { DocumentFile, DocumentType } from '../types';
 
-interface DocumentTypeDrawerProps {
+interface ClientTypeDrawerProps {
   documentType: DocumentType;
   onClose: () => void;
-  onToggleLive: (id: number, live: boolean) => void;
-  onEdit: (type: DocumentType) => void;
-  onDelete: (id: number) => void;
   onDocumentCountChange: (typeId: number, count: number) => void;
 }
 
@@ -22,14 +18,7 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function DocumentTypeDrawer({
-  documentType,
-  onClose,
-  onToggleLive,
-  onEdit,
-  onDelete,
-  onDocumentCountChange,
-}: DocumentTypeDrawerProps) {
+export function ClientTypeDrawer({ documentType, onClose, onDocumentCountChange }: ClientTypeDrawerProps) {
   const [documents, setDocuments] = useState<DocumentFile[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -75,19 +64,6 @@ export function DocumentTypeDrawer({
     }
   }
 
-  async function handleDeleteDocument(id: number) {
-    try {
-      await deleteDocument(id);
-      setDocuments((current) => {
-        const next = current.filter((doc) => doc.id !== id);
-        onDocumentCountChange(documentType.id, next.length);
-        return next;
-      });
-    } catch (err) {
-      setDocsError(err instanceof ApiError ? err.message : 'Verwijderen is niet gelukt.');
-    }
-  }
-
   return (
     <Drawer title={documentType.name} eyebrow={documentType.provider} onClose={onClose}>
       <div className="drawer-summary">
@@ -102,33 +78,12 @@ export function DocumentTypeDrawer({
         <div>
           <span>Status</span>
           <StatusPill tone={documentType.live ? 'green' : 'amber'}>
-            {documentType.live ? 'Live' : 'Inleren'}
+            {documentType.live ? 'Live' : 'Wordt ingeleerd'}
           </StatusPill>
         </div>
       </div>
 
-      <div className="drawer-actions-row">
-        <button type="button" className="secondary-button" onClick={() => onEdit(documentType)}>
-          <Pencil size={16} /> Bewerken
-        </button>
-        <button type="button" className="danger-button" onClick={() => onDelete(documentType.id)}>
-          <Trash2 size={16} /> Verwijderen
-        </button>
-      </div>
-
-      <div className="drawer-toggle-row">
-        <div>
-          <strong>Documenttype live zetten</strong>
-          <small>Zet dit documenttype aan of uit voor automatische verwerking.</small>
-        </div>
-        <Toggle
-          checked={documentType.live}
-          onChange={(checked) => onToggleLive(documentType.id, checked)}
-          label={`${documentType.name} live zetten`}
-        />
-      </div>
-
-      <h3 className="drawer-subheading">Uitgelezen velden</h3>
+      <h3 className="drawer-subheading">Gewenste velden</h3>
       <div className="field-chip-list">
         {documentType.fieldList.map((field) => (
           <span className="field-chip" key={field}>
@@ -153,7 +108,7 @@ export function DocumentTypeDrawer({
         disabled={uploading}
       >
         <Upload size={22} />
-        <strong>{uploading ? 'Bezig met uploaden...' : 'Klik om documenten te uploaden'}</strong>
+        <strong>{uploading ? 'Bezig met uploaden...' : 'Klik om extra voorbeelden te uploaden'}</strong>
         <small>Ondersteunde formaten: PDF, JPG, PNG</small>
       </button>
 
@@ -168,9 +123,6 @@ export function DocumentTypeDrawer({
                 {doc.filename}
               </a>
               <span className="file-size">{formatFileSize(doc.sizeBytes)}</span>
-              <button type="button" onClick={() => handleDeleteDocument(doc.id)} aria-label={`Verwijder ${doc.filename}`}>
-                <X size={14} />
-              </button>
             </li>
           ))}
         </ul>

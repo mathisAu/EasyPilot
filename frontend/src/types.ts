@@ -45,19 +45,34 @@ export interface Stage {
 }
 
 export interface DocumentType {
-  id: string;
+  id: number;
   name: string;
   provider: string;
   examples: number;
   live: boolean;
   fieldList: string[];
+  organizationId?: number | null;
+  organizationName?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DocumentFile {
+  id: number;
+  documentTypeId: number;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+  downloadUrl: string;
 }
 
 export interface Organization {
-  id: string;
+  id: number;
   name: string;
-  activeTypes: number;
-  lastActivity: string;
+  customerUsername: string | null;
+  documentTypeCount: number;
+  createdAt: string;
 }
 
 export interface WizardFormData {
