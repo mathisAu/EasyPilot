@@ -78,6 +78,16 @@ export interface ExtractedField {
   edited: boolean;
   included: boolean;
   hasLocation: boolean;
+  /** Location on the page as fractions (0-1) from the top-left; null when unknown. */
+  boxPage: number | null;
+  boxX: number | null;
+  boxY: number | null;
+  boxWidth: number | null;
+  boxHeight: number | null;
+  /** The AI's own 0-1 certainty for the value; null for older extractions. */
+  confidence: number | null;
+  /** The admin replaced what the AI read with a different value. */
+  corrected: boolean;
   updatedAt: string;
 }
 
@@ -96,6 +106,8 @@ export interface Organization {
   contactName: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
+  /** When the current logo was uploaded; null if the organisation has no logo. */
+  logoUpdatedAt: string | null;
 }
 
 export type OrganizationDetails = Pick<
@@ -132,7 +144,18 @@ export interface TicketSummary {
   organizationName: string | null;
   createdByName: string;
   messageCount: number;
+  lastMessageAuthorRole: 'ADMIN' | 'CUSTOMER' | null;
   createdAt: string;
+  updatedAt: string;
+}
+
+/** An unsent reply (ticketId set) or an unsubmitted new ticket (ticketId null). Private to its author. */
+export interface TicketDraft {
+  id: number;
+  ticketId: number | null;
+  ticketSubject: string | null;
+  subject: string | null;
+  body: string | null;
   updatedAt: string;
 }
 

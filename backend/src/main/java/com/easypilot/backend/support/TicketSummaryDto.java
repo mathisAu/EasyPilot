@@ -9,6 +9,8 @@ public record TicketSummaryDto(
         String organizationName,
         String createdByName,
         long messageCount,
+        /** ADMIN or CUSTOMER: who wrote the latest message, i.e. who is waiting on whom. */
+        String lastMessageAuthorRole,
         Instant createdAt,
         Instant updatedAt
 ) {

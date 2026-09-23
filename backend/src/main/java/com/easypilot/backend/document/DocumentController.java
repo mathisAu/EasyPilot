@@ -26,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 public class DocumentController {
@@ -85,6 +86,25 @@ public class DocumentController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(summary.content());
+    }
+
+    @GetMapping("/api/documents/{id}/pages")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Map<String, Integer> pageCount(@PathVariable Long id, Authentication authentication) {
+        return Map.of("pageCount", service.pageCount(id, currentUserService.require(authentication)));
+    }
+
+    @GetMapping(value = "/api/documents/{id}/pages/{page}", produces = MediaType.IMAGE_PNG_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> renderPage(@PathVariable Long id, @PathVariable int page,
+                                             @RequestParam(defaultValue = "original") String variant,
+                                             Authentication authentication) {
+        boolean edited = "edited".equalsIgnoreCase(variant);
+        byte[] png = service.renderPage(id, page, edited, currentUserService.require(authentication));
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, edited ? "no-store" : "private, max-age=300")
+                .contentType(MediaType.IMAGE_PNG)
+                .body(png);
     }
 
     @GetMapping("/api/documents/{id}/redacted")

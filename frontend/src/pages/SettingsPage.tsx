@@ -256,29 +256,48 @@ function TwoFactorCard({ totpEnabled, onChanged }: TwoFactorCardProps) {
   }
 
   return (
-    <div className="settings-card">
-      <div className="settings-status-row">
-        <h2>
-          <ShieldCheck size={16} style={{ verticalAlign: '-3px', marginRight: 8 }} />
-          Tweestapsverificatie
-        </h2>
-        <StatusPill tone={totpEnabled ? 'green' : 'slate'}>{totpEnabled ? 'Ingeschakeld' : 'Uitgeschakeld'}</StatusPill>
-      </div>
-      <p className="settings-card-description">
-        Beveilig je account met een extra verificatiecode uit een authenticator-app (bijv. Google Authenticator of Authy)
-        bij het inloggen.
-      </p>
+    <div className="settings-card settings-bar">
+      <div className="settings-bar-row">
+        <span className={`settings-bar-icon ${totpEnabled ? 'enabled' : ''}`}>
+          <ShieldCheck size={20} />
+        </span>
+        <div className="settings-bar-copy">
+          <div className="settings-bar-title">
+            <h2>Tweestapsverificatie</h2>
+            <StatusPill tone={totpEnabled ? 'green' : 'slate'}>{totpEnabled ? 'Ingeschakeld' : 'Uitgeschakeld'}</StatusPill>
+          </div>
+          <p className="settings-card-description">
+            Beveilig je account met een extra verificatiecode uit een authenticator-app (bijv. Google Authenticator of
+            Authy) bij het inloggen.
+          </p>
+        </div>
 
-      {!totpEnabled && !setup && (
-        <div className="settings-card-actions">
-          <button type="button" className="primary-button" onClick={startSetup} disabled={submitting}>
+        {!totpEnabled && !setup && (
+          <button type="button" className="primary-button settings-bar-action" onClick={startSetup} disabled={submitting}>
             <QrCode size={16} /> {submitting ? 'Bezig...' : 'Inschakelen'}
           </button>
-        </div>
-      )}
+        )}
+
+        {totpEnabled && (
+          <form className="settings-bar-inline-form" onSubmit={handleDisable}>
+            <input
+              value={code}
+              onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+              inputMode="numeric"
+              placeholder="Huidige code"
+              aria-label="Voer je huidige verificatiecode in om uit te schakelen"
+            />
+            <button type="submit" className="danger-button" disabled={code.length !== 6 || submitting}>
+              <ShieldOff size={16} /> {submitting ? 'Bezig...' : 'Uitschakelen'}
+            </button>
+          </form>
+        )}
+      </div>
+
+      {!setup && error && <p className="form-error">{error}</p>}
 
       {!totpEnabled && setup && (
-        <form onSubmit={confirmSetup}>
+        <form className="settings-bar-setup" onSubmit={confirmSetup}>
           <div className="settings-qr-box">
             <QRCodeSVG value={setup.otpAuthUri} size={168} />
           </div>
@@ -308,25 +327,6 @@ function TwoFactorCard({ totpEnabled, onChanged }: TwoFactorCardProps) {
         </form>
       )}
 
-      {totpEnabled && (
-        <form onSubmit={handleDisable}>
-          <label>
-            Voer je huidige verificatiecode in om uit te schakelen
-            <input
-              value={code}
-              onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-              inputMode="numeric"
-              placeholder="123456"
-            />
-          </label>
-          {error && <p className="form-error">{error}</p>}
-          <div className="settings-card-actions">
-            <button type="submit" className="danger-button" disabled={code.length !== 6 || submitting}>
-              <ShieldOff size={16} /> {submitting ? 'Bezig...' : 'Uitschakelen'}
-            </button>
-          </div>
-        </form>
-      )}
     </div>
   );
 }

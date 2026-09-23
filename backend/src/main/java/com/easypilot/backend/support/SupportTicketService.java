@@ -24,12 +24,14 @@ public class SupportTicketService {
     private final SupportTicketRepository ticketRepository;
     private final TicketMessageRepository messageRepository;
     private final NotificationService notificationService;
+    private final TicketDraftRepository draftRepository;
 
     public SupportTicketService(SupportTicketRepository ticketRepository, TicketMessageRepository messageRepository,
-                                 NotificationService notificationService) {
+                                 NotificationService notificationService, TicketDraftRepository draftRepository) {
         this.ticketRepository = ticketRepository;
         this.messageRepository = messageRepository;
         this.notificationService = notificationService;
+        this.draftRepository = draftRepository;
     }
 
     @Transactional(readOnly = true)
@@ -98,6 +100,7 @@ public class SupportTicketService {
         message.setAuthor(user);
         message.setBody(request.body().trim());
         messageRepository.save(message);
+        draftRepository.deleteByAuthorIdAndTicketId(user.getId(), ticketId);
 
         ticket.touch();
         ticketRepository.save(ticket);
@@ -165,7 +168,7 @@ public class SupportTicketService {
         return message;
     }
 
-    private SupportTicket getAccessibleTicket(Long ticketId, AppUser user) {
+    SupportTicket getAccessibleTicket(Long ticketId, AppUser user) {
         SupportTicket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket niet gevonden"));
         boolean isAdmin = user.getRole() == Role.ADMIN;
@@ -191,6 +194,9 @@ public class SupportTicketService {
                 ticket.getOrganization() != null ? ticket.getOrganization().getName() : null,
                 displayName(ticket.getCreatedBy()),
                 messageRepository.countByTicketId(ticket.getId()),
+                messageRepository.findFirstByTicketIdOrderByCreatedAtDesc(ticket.getId())
+                        .map(message -> message.getAuthor().getRole().name())
+                        .orElse(null),
                 ticket.getCreatedAt(),
                 ticket.getUpdatedAt()
         );

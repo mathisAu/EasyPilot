@@ -120,6 +120,33 @@ public class DocumentService {
         return new RedactedFile(filename, contentType, content);
     }
 
+    public record PreviewSource(byte[] bytes, String contentType) {
+    }
+
+    /** The original upload, or the edited copy (same page layout) when edited is true. */
+    @Transactional(readOnly = true)
+    public PreviewSource loadPreviewSource(Long documentId, boolean edited, AppUser currentUser) {
+        if (edited) {
+            RedactedFile file = generateRedactedFile(documentId, currentUser);
+            return new PreviewSource(file.content(), file.contentType());
+        }
+        Document document = getOrThrow(documentId);
+        documentTypeService.getVisibleOrThrow(document.getDocumentType().getId(), currentUser);
+        return new PreviewSource(fileStorageService.readAllBytes(document.getStoredFilename()), document.getContentType());
+    }
+
+    @Transactional(readOnly = true)
+    public int pageCount(Long documentId, AppUser currentUser) {
+        PreviewSource source = loadPreviewSource(documentId, false, currentUser);
+        return DocumentPageRenderer.pageCount(source.bytes(), source.contentType());
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] renderPage(Long documentId, int page, boolean edited, AppUser currentUser) {
+        PreviewSource source = loadPreviewSource(documentId, edited, currentUser);
+        return DocumentPageRenderer.renderPagePng(source.bytes(), source.contentType(), page);
+    }
+
     // Untouched fields are left exactly as they appear in the source, rather than
     // being painted over and redrawn in a different font.
     private boolean isChangedByAdmin(ExtractedField field) {
