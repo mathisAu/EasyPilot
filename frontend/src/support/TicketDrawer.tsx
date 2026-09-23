@@ -4,6 +4,8 @@ import { Drawer } from '../components/Drawer';
 import { addMessage, deleteMessage, editMessage, getReplyDraft, saveReplyDraft, updateTicketStatus } from '../api/support';
 import { ApiError } from '../api/client';
 import type { TicketDetail, TicketMessage } from '../types';
+import { useAuth } from '../auth/AuthContext';
+import { ticketTurn } from './ticketTurn';
 
 const MESSAGE_COOLDOWN_SECONDS = 5;
 const DRAFT_SAVE_DELAY_MS = 700;
@@ -20,6 +22,13 @@ function formatTime(iso: string): string {
 }
 
 export function TicketDrawer({ ticket, onClose, onChanged, onDraftChanged }: TicketDrawerProps) {
+  const { user } = useAuth();
+  const lastMessage = ticket.messages[ticket.messages.length - 1];
+  const turn = ticketTurn(
+    ticket.status,
+    lastMessage ? (lastMessage.authorRole === 'ADMIN' ? 'ADMIN' : 'CUSTOMER') : null,
+    user?.role === 'ADMIN' ? 'ADMIN' : 'CUSTOMER'
+  );
   const [reply, setReply] = useState('');
   const [draftStatus, setDraftStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   // Unsent text is autosaved as a server-side draft, so logging out mid-chat never loses it.
@@ -183,9 +192,9 @@ export function TicketDrawer({ ticket, onClose, onChanged, onDraftChanged }: Tic
   return (
     <Drawer title={ticket.subject} eyebrow={`Ticket #${ticket.id}`} onClose={onClose}>
       <div className="ticket-drawer-meta">
-        <span className={`status-pill ${ticket.status === 'OPEN' ? 'status-blue' : 'status-slate'}`}>
+        <span className={`status-pill status-${turn.tone}`} title={turn.description}>
           <span className="status-dot" />
-          {ticket.status === 'OPEN' ? 'Open' : 'Gesloten'}
+          {turn.label}
         </span>
         {ticket.organizationName && <span className="field-chip">{ticket.organizationName}</span>}
         <button type="button" className="text-button" onClick={toggleStatus}>

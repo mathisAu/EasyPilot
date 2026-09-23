@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { CheckCircle2, ChevronDown, ChevronRight, FileClock, MessageSquare, Plus, Ticket } from 'lucide-react';
 import type { TicketDraft, TicketSummary } from '../types';
+import { useAuth } from '../auth/AuthContext';
+import { ticketTurn } from './ticketTurn';
 
 interface TicketListProps {
   tickets: TicketSummary[];
@@ -39,6 +41,8 @@ export function TicketList({
   onCreate,
 }: TicketListProps) {
   const [showClosed, setShowClosed] = useState(false);
+  const { user } = useAuth();
+  const viewerRole = user?.role === 'ADMIN' ? 'ADMIN' : 'CUSTOMER';
   const openTickets = tickets.filter((ticket) => ticket.status !== 'CLOSED');
   const closedTickets = tickets.filter((ticket) => ticket.status === 'CLOSED');
   const ticketIdsWithDraft = new Set(drafts.map((draft) => draft.ticketId).filter((id): id is number => id != null));
@@ -48,30 +52,33 @@ export function TicketList({
   function renderRows(list: TicketSummary[]) {
     return (
       <div className="ticket-list">
-        {list.map((ticket) => (
-          <button className="ticket-row" key={ticket.id} onClick={() => onOpen(ticket)} type="button">
-            <span className={`ticket-row-icon ${ticket.status === 'CLOSED' ? 'closed' : ''}`}>
-              {ticket.status === 'CLOSED' ? <CheckCircle2 size={18} /> : <MessageSquare size={18} />}
-            </span>
-            <div>
-              <strong>{ticket.subject}</strong>
-              <small>
-                {showOrganization && ticket.organizationName ? `${ticket.organizationName} · ` : ''}
-                {ticket.messageCount} bericht{ticket.messageCount === 1 ? '' : 'en'} · {timeAgo(ticket.updatedAt)}
-              </small>
-            </div>
-            {ticketIdsWithDraft.has(ticket.id) && (
-              <span className="status-pill status-amber" title="Je hebt hier een onverstuurde reactie">
-                <span className="status-dot" />
-                Concept
+        {list.map((ticket) => {
+          const turn = ticketTurn(ticket.status, ticket.lastMessageAuthorRole, viewerRole);
+          return (
+            <button className="ticket-row" key={ticket.id} onClick={() => onOpen(ticket)} type="button">
+              <span className={`ticket-row-icon ${ticket.status === 'CLOSED' ? 'closed' : ''}`}>
+                {ticket.status === 'CLOSED' ? <CheckCircle2 size={18} /> : <MessageSquare size={18} />}
               </span>
-            )}
-            <span className={`status-pill ${ticket.status === 'OPEN' ? 'status-blue' : 'status-slate'}`}>
-              <span className="status-dot" />
-              {ticket.status === 'OPEN' ? 'Open' : 'Gesloten'}
-            </span>
-          </button>
-        ))}
+              <div>
+                <strong>{ticket.subject}</strong>
+                <small>
+                  {showOrganization && ticket.organizationName ? `${ticket.organizationName} · ` : ''}
+                  {ticket.messageCount} bericht{ticket.messageCount === 1 ? '' : 'en'} · {timeAgo(ticket.updatedAt)}
+                </small>
+              </div>
+              {ticketIdsWithDraft.has(ticket.id) && (
+                <span className="status-pill status-amber" title="Je hebt hier een onverstuurde reactie">
+                  <span className="status-dot" />
+                  Concept
+                </span>
+              )}
+              <span className={`status-pill status-${turn.tone}`} title={turn.description}>
+                <span className="status-dot" />
+                {turn.label}
+              </span>
+            </button>
+          );
+        })}
       </div>
     );
   }

@@ -3,6 +3,7 @@ import { FileClock, Plus, Trash2, X } from 'lucide-react';
 import { createTicket, createTicketDraft, deleteTicketDraft, updateTicketDraft } from '../api/support';
 import { ApiError } from '../api/client';
 import type { TicketDetail, TicketDraft } from '../types';
+import { useAuth } from '../auth/AuthContext';
 
 interface NewTicketModalProps {
   /** An unsubmitted ticket being picked up again; submitting it removes the concept. */
@@ -18,6 +19,9 @@ export function NewTicketModal({ draft, onClose, onCreated, onDraftChanged }: Ne
   const [submitting, setSubmitting] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [error, setError] = useState('');
+  const { user } = useAuth();
+  // Parking an unfinished new ticket is an admin tool; customers just submit.
+  const canUseDrafts = user?.role === 'ADMIN';
 
   const canSubmit = subject.trim().length > 0 && message.trim().length > 0;
   const canSaveDraft = subject.trim().length > 0 || message.trim().length > 0;
@@ -88,8 +92,8 @@ export function NewTicketModal({ draft, onClose, onCreated, onDraftChanged }: Ne
         <p className="eyebrow">{draft ? 'Concept' : 'Support'}</p>
         <h2>{draft ? 'Concept afmaken' : 'Nieuw ticket'}</h2>
         <p className="modal-description">
-          Beschrijf je vraag zo duidelijk mogelijk, dan helpen we je snel verder. Nog niet klaar? Sla het op als
-          concept en maak het later af.
+          Beschrijf je vraag zo duidelijk mogelijk, dan helpen we je snel verder.
+          {canUseDrafts && ' Nog niet klaar? Sla het op als concept en maak het later af.'}
         </p>
         <label>
           Onderwerp
@@ -118,9 +122,15 @@ export function NewTicketModal({ draft, onClose, onCreated, onDraftChanged }: Ne
               <Trash2 size={14} /> Concept verwijderen
             </button>
           )}
-          <button type="button" className="secondary-button" onClick={handleSaveDraft} disabled={!canSaveDraft || busy}>
-            <FileClock size={16} /> {savingDraft ? 'Bezig...' : 'Als concept opslaan'}
-          </button>
+          {canUseDrafts ? (
+            <button type="button" className="secondary-button" onClick={handleSaveDraft} disabled={!canSaveDraft || busy}>
+              <FileClock size={16} /> {savingDraft ? 'Bezig...' : 'Als concept opslaan'}
+            </button>
+          ) : (
+            <button type="button" className="secondary-button" onClick={onClose} disabled={busy}>
+              Annuleren
+            </button>
+          )}
           <button type="submit" className="primary-button" disabled={!canSubmit || busy}>
             <Plus size={16} /> {submitting ? 'Bezig...' : 'Ticket aanmaken'}
           </button>

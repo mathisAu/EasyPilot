@@ -118,6 +118,7 @@ export interface TicketSummary {
   organizationName: string | null;
   createdByName: string;
   messageCount: number;
+  lastMessageAuthorRole: 'ADMIN' | 'CUSTOMER' | null;
   createdAt: string;
   updatedAt: string;
 }

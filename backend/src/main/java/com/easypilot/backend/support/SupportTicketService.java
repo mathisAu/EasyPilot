@@ -194,6 +194,9 @@ public class SupportTicketService {
                 ticket.getOrganization() != null ? ticket.getOrganization().getName() : null,
                 displayName(ticket.getCreatedBy()),
                 messageRepository.countByTicketId(ticket.getId()),
+                messageRepository.findFirstByTicketIdOrderByCreatedAtDesc(ticket.getId())
+                        .map(message -> message.getAuthor().getRole().name())
+                        .orElse(null),
                 ticket.getCreatedAt(),
                 ticket.getUpdatedAt()
         );
