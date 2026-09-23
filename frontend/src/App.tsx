@@ -16,7 +16,7 @@ import { DocumentReviewModal } from './modals/DocumentReviewModal';
 import { OrganizationDrawer } from './modals/OrganizationDrawer';
 import { AddOrganizationModal } from './modals/AddOrganizationModal';
 import { ClientPortal } from './client/ClientPortal';
-import type { DocumentType, Organization, PageKey, RequestStatus } from './types';
+import type { DocumentType, NotificationTargetType, Organization, PageKey, RequestStatus } from './types';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { listDocumentTypes, deleteDocumentType } from './api/documentTypes';
 import { listOrganizations } from './api/organizations';
@@ -73,6 +73,7 @@ function AppShell() {
   const [viewingType, setViewingType] = useState<DocumentType | null>(null);
   const [reviewingType, setReviewingType] = useState<DocumentType | null>(null);
   const [viewingOrganization, setViewingOrganization] = useState<Organization | null>(null);
+  const [focusTicketId, setFocusTicketId] = useState<number | null>(null);
 
   function notify(message: string) {
     setToast(message);
@@ -168,6 +169,19 @@ function AppShell() {
     notify(`${organization.name} toegevoegd aan je werkruimte`);
   }
 
+  function handleNotificationNavigate(targetType: NotificationTargetType, targetId: number) {
+    if (targetType === 'TICKET') {
+      setFocusTicketId(targetId);
+      navigate('Help & support');
+    } else {
+      const type = documentTypes.find((item) => item.id === targetId);
+      if (type) {
+        setReviewingType(type);
+      }
+      navigate('Documenttypes');
+    }
+  }
+
   function renderPage() {
     switch (active) {
       case 'Dashboard':
@@ -193,7 +207,7 @@ function AppShell() {
       case 'Instellingen':
         return <SettingsPage />;
       case 'Help & support':
-        return <SupportPage />;
+        return <SupportPage focusTicketId={focusTicketId} onFocusHandled={() => setFocusTicketId(null)} />;
       case 'Documentaanvragen':
       default:
         return (
@@ -218,7 +232,12 @@ function AppShell() {
       <Sidebar active={active} mobileOpen={mobileOpen} requestCount={documentTypes.length} onNavigate={navigate} />
 
       <main className="main-content">
-        <Topbar active={active} onToggleMobileNav={() => setMobileOpen((open) => !open)} onLogout={logout} />
+        <Topbar
+          active={active}
+          onToggleMobileNav={() => setMobileOpen((open) => !open)}
+          onLogout={logout}
+          onNotificationNavigate={handleNotificationNavigate}
+        />
         <div className="page-wrap" key={active}>
           {renderPage()}
         </div>

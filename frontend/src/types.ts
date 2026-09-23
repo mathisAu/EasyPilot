@@ -132,3 +132,15 @@ export interface TicketDetail {
   updatedAt: string;
   messages: TicketMessage[];
 }
+
+export type NotificationTargetType = 'TICKET' | 'DOCUMENT_TYPE';
+
+export interface AppNotification {
+  id: number;
+  title: string;
+  body: string;
+  targetType: NotificationTargetType;
+  targetId: number;
+  read: boolean;
+  createdAt: string;
+}

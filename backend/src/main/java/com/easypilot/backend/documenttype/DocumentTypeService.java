@@ -4,9 +4,12 @@ import com.easypilot.backend.common.ResourceNotFoundException;
 import com.easypilot.backend.document.Document;
 import com.easypilot.backend.folder.Folder;
 import com.easypilot.backend.folder.FolderRepository;
+import com.easypilot.backend.notification.NotificationService;
+import com.easypilot.backend.notification.NotificationTargetType;
 import com.easypilot.backend.organization.Organization;
 import com.easypilot.backend.storage.FileStorageService;
 import com.easypilot.backend.user.AppUser;
+import com.easypilot.backend.user.AppUserRepository;
 import com.easypilot.backend.user.Role;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,12 +22,17 @@ public class DocumentTypeService {
     private final DocumentTypeRepository repository;
     private final FileStorageService fileStorageService;
     private final FolderRepository folderRepository;
+    private final NotificationService notificationService;
+    private final AppUserRepository appUserRepository;
 
     public DocumentTypeService(DocumentTypeRepository repository, FileStorageService fileStorageService,
-                               FolderRepository folderRepository) {
+                                FolderRepository folderRepository, NotificationService notificationService,
+                                AppUserRepository appUserRepository) {
         this.repository = repository;
         this.fileStorageService = fileStorageService;
         this.folderRepository = folderRepository;
+        this.notificationService = notificationService;
+        this.appUserRepository = appUserRepository;
     }
 
     @Transactional(readOnly = true)
@@ -54,7 +62,16 @@ public class DocumentTypeService {
             type.setStatus(RequestStatus.AANGELEVERD);
         }
 
-        return toDto(repository.save(type), currentUser);
+        DocumentType saved = repository.save(type);
+
+        if (currentUser.getRole() == Role.CUSTOMER) {
+            notificationService.notifyAllAdmins(
+                    "Nieuw documenttype: " + saved.getName(),
+                    displayName(currentUser) + " heeft \"" + saved.getName() + "\" aangeleverd.",
+                    NotificationTargetType.DOCUMENT_TYPE, saved.getId());
+        }
+
+        return toDto(saved, currentUser);
     }
 
     @Transactional
@@ -70,7 +87,36 @@ public class DocumentTypeService {
         DocumentType type = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Documenttype niet gevonden"));
         type.setStatus(status);
-        return DocumentTypeDto.from(repository.save(type));
+        DocumentType saved = repository.save(type);
+
+        if (saved.getOrganization() != null) {
+            appUserRepository.findFirstByOrganizationId(saved.getOrganization().getId())
+                    .ifPresent(customer -> notificationService.notifyUser(
+                            customer,
+                            "Status gewijzigd: " + saved.getName(),
+                            "\"" + saved.getName() + "\" staat nu op " + statusLabel(status) + ".",
+                            NotificationTargetType.DOCUMENT_TYPE, saved.getId()));
+        }
+
+        return DocumentTypeDto.from(saved);
+    }
+
+    private String statusLabel(RequestStatus status) {
+        return switch (status) {
+            case AANGELEVERD -> "Aangeleverd";
+            case IN_BEOORDELING -> "In beoordeling";
+            case INLEREN -> "Inleren";
+            case TESTEN -> "Testen";
+            case CORRECTIE_NODIG -> "Correctie nodig";
+            case GOEDGEKEURD -> "Goedgekeurd";
+            case LIVE -> "Live";
+        };
+    }
+
+    private String displayName(AppUser user) {
+        return user.getDisplayName() != null && !user.getDisplayName().isBlank()
+                ? user.getDisplayName()
+                : user.getUsername();
     }
 
     @Transactional
