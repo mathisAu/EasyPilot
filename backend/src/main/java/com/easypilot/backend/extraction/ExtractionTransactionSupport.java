@@ -5,6 +5,7 @@ import com.easypilot.backend.document.DocumentRepository;
 import com.easypilot.backend.notification.NotificationService;
 import com.easypilot.backend.notification.NotificationTargetType;
 import com.easypilot.backend.storage.FileStorageService;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,9 @@ import java.util.Map;
  */
 @Service
 public class ExtractionTransactionSupport {
+
+    /** Recent admin corrections passed to the model as examples; kept small to limit prompt size. */
+    private static final int MAX_CORRECTIONS = 15;
 
     private final DocumentRepository documentRepository;
     private final ExtractedFieldRepository extractedFieldRepository;
@@ -75,7 +79,14 @@ public class ExtractionTransactionSupport {
         document.setExtractionError(null);
         documentRepository.save(document);
 
-        return new ExtractContext(documentId, bytes, contentType, List.copyOf(fieldNames));
+        List<FieldCorrection> corrections = extractedFieldRepository
+                .findRecentCorrections(document.getDocumentType().getId(), documentId, PageRequest.of(0, MAX_CORRECTIONS))
+                .stream()
+                .filter(field -> fieldNames.contains(field.getFieldName()))
+                .map(field -> new FieldCorrection(field.getFieldName(), field.getOriginalValue(), field.getValue()))
+                .toList();
+
+        return new ExtractContext(documentId, bytes, contentType, List.copyOf(fieldNames), corrections);
     }
 
     @Transactional
@@ -96,6 +107,7 @@ public class ExtractionTransactionSupport {
                 field.setFieldName(fieldName);
                 field.setValue(extracted != null ? extracted.value() : null);
                 field.setOriginalValue(field.getValue());
+                field.setConfidence(extracted != null ? extracted.confidence() : null);
                 FieldBox box = extracted != null ? extracted.box() : null;
                 if (box != null) {
                     field.setBoxPage(box.page());

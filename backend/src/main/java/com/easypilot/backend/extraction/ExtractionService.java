@@ -55,7 +55,7 @@ public class ExtractionService {
     private ExtractionResult callGemini(ExtractContext ctx) {
         try {
             String base64Data = Base64.getEncoder().encodeToString(ctx.bytes());
-            String prompt = buildPrompt(ctx.fieldNames());
+            String prompt = buildPrompt(ctx.fieldNames(), ctx.corrections());
             String contentKind = "application/pdf".equalsIgnoreCase(ctx.contentType()) ? "document" : "image";
 
             Map<String, Object> filePart = new LinkedHashMap<>();
@@ -110,18 +110,34 @@ public class ExtractionService {
         return result.toString();
     }
 
-    private String buildPrompt(List<String> fieldNames) {
+    private String buildPrompt(List<String> fieldNames, List<FieldCorrection> corrections) {
         String fieldList = String.join(", ", fieldNames);
-        return "Je bent een documentextractie-assistent. Analyseer het bijgevoegde document en haal de volgende "
-                + "velden eruit: " + fieldList + ". Antwoord ALLEEN met een geldig JSON-object waarbij de sleutels "
-                + "exact deze veldnamen zijn. Elke sleutel wijst naar een object met twee dingen: \"value\" (de "
-                + "gevonden tekst, of null als het veld niet voorkomt) en \"box\" (de locatie van die tekst op de "
-                + "pagina, of null als je dat niet kan bepalen). Een box is een object met \"page\" (paginanummer, "
-                + "beginnend bij 0), \"x\" en \"y\" (linkerbovenhoek van het tekstvak, als fractie 0 tot 1 van de "
-                + "paginabreedte/-hoogte) en \"width\"/\"height\" (afmetingen van het tekstvak, ook als fractie 0 "
-                + "tot 1). Voorbeeld voor een veld \"Gewicht\" met waarde \"2.600 kg\" in de linkerbovenhoek: "
-                + "{\"Gewicht\": {\"value\": \"2.600 kg\", \"box\": {\"page\": 0, \"x\": 0.1, \"y\": 0.2, "
-                + "\"width\": 0.15, \"height\": 0.02}}}. Geen uitleg, geen markdown-opmaak, alleen het JSON-object.";
+        StringBuilder prompt = new StringBuilder()
+                .append("Je bent een documentextractie-assistent. Analyseer het bijgevoegde document en haal de volgende ")
+                .append("velden eruit: ").append(fieldList).append(". Antwoord ALLEEN met een geldig JSON-object waarbij ")
+                .append("de sleutels exact deze veldnamen zijn. Elke sleutel wijst naar een object met drie dingen: ")
+                .append("\"value\" (de gevonden tekst, of null als het veld niet voorkomt), \"confidence\" (hoe zeker ")
+                .append("je bent van die waarde, als getal van 0 tot 1; wees eerlijk en geef een lage waarde bij ")
+                .append("slecht leesbare, dubbelzinnige of geraden tekst) en \"box\" (de locatie van die tekst op de ")
+                .append("pagina, of null als je dat niet kan bepalen). Een box is een object met \"page\" ")
+                .append("(paginanummer, beginnend bij 0), \"x\" en \"y\" (linkerbovenhoek van het tekstvak, als fractie ")
+                .append("0 tot 1 van de paginabreedte/-hoogte) en \"width\"/\"height\" (afmetingen van het tekstvak, ")
+                .append("ook als fractie 0 tot 1). Voorbeeld voor een veld \"Gewicht\" met waarde \"2.600 kg\" in de ")
+                .append("linkerbovenhoek: {\"Gewicht\": {\"value\": \"2.600 kg\", \"confidence\": 0.95, \"box\": ")
+                .append("{\"page\": 0, \"x\": 0.1, \"y\": 0.2, \"width\": 0.15, \"height\": 0.02}}}.");
+        if (!corrections.isEmpty()) {
+            prompt.append(" Bij eerdere documenten van dit type heeft een medewerker de volgende waarden verbeterd. ")
+                    .append("Gebruik deze correcties om hetzelfde soort fout te vermijden en om de gewenste notatie ")
+                    .append("aan te houden:");
+            for (FieldCorrection correction : corrections) {
+                prompt.append("\n- Veld \"").append(correction.fieldName()).append("\": uitgelezen als \"")
+                        .append(correction.extractedValue()).append("\", correct was \"")
+                        .append(correction.correctedValue()).append("\"");
+            }
+            prompt.append("\n");
+        }
+        prompt.append(" Geen uitleg, geen markdown-opmaak, alleen het JSON-object.");
+        return prompt.toString();
     }
 
     private Map<String, ExtractedValue> parseJsonResponse(String rawText) {
@@ -157,7 +173,12 @@ public class ExtractionService {
                         boxNode.path("height").asDouble()
                 );
             }
-            result.put(fieldName, new ExtractedValue(value, box));
+            Double confidence = null;
+            JsonNode confidenceNode = fieldNode.path("confidence");
+            if (confidenceNode.isNumber()) {
+                confidence = Math.max(0, Math.min(1, confidenceNode.asDouble()));
+            }
+            result.put(fieldName, new ExtractedValue(value, box, confidence));
         });
         return result;
     }

@@ -36,6 +36,13 @@ interface BackendExtractedFieldDto {
   edited: boolean;
   included: boolean;
   hasLocation: boolean;
+  boxPage: number | null;
+  boxX: number | null;
+  boxY: number | null;
+  boxWidth: number | null;
+  boxHeight: number | null;
+  confidence: number | null;
+  corrected: boolean;
   updatedAt: string;
 }
 
@@ -106,6 +113,13 @@ function mapExtractedField(dto: BackendExtractedFieldDto): ExtractedField {
     edited: dto.edited,
     included: dto.included,
     hasLocation: dto.hasLocation,
+    boxPage: dto.boxPage,
+    boxX: dto.boxX,
+    boxY: dto.boxY,
+    boxWidth: dto.boxWidth,
+    boxHeight: dto.boxHeight,
+    confidence: dto.confidence,
+    corrected: dto.corrected,
     updatedAt: dto.updatedAt,
   };
 }
@@ -186,6 +200,16 @@ export function previewUrl(id: number): string {
 
 export function summaryUrl(id: number): string {
   return `/api/documents/${id}/summary`;
+}
+
+export async function getPageCount(documentId: number): Promise<number> {
+  const result = await apiFetch<{ pageCount: number }>(`/api/documents/${documentId}/pages`);
+  return result.pageCount;
+}
+
+/** A single page of the document (or of its edited copy) rendered as PNG for the review preview. */
+export function pageImageUrl(documentId: number, page: number, edited: boolean, version: number): string {
+  return `/api/documents/${documentId}/pages/${page}?variant=${edited ? 'edited' : 'original'}&v=${version}`;
 }
 
 export function redactedUrl(id: number): string {

@@ -78,6 +78,16 @@ export interface ExtractedField {
   edited: boolean;
   included: boolean;
   hasLocation: boolean;
+  /** Location on the page as fractions (0-1) from the top-left; null when unknown. */
+  boxPage: number | null;
+  boxX: number | null;
+  boxY: number | null;
+  boxWidth: number | null;
+  boxHeight: number | null;
+  /** The AI's own 0-1 certainty for the value; null for older extractions. */
+  confidence: number | null;
+  /** The admin replaced what the AI read with a different value. */
+  corrected: boolean;
   updatedAt: string;
 }
 

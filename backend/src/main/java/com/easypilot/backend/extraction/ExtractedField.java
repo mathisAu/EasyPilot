@@ -48,6 +48,9 @@ public class ExtractedField {
     // page/image width and height from the top-left corner. Null when the AI
     // couldn't locate the field, or for documents extracted before this existed —
     // used only to burn edits into a downloadable copy of the original file.
+    // The model's own 0-1 certainty for this value; null for older extractions.
+    private Double confidence;
+
     private Integer boxPage;
     private Double boxX;
     private Double boxY;
@@ -120,6 +123,19 @@ public class ExtractedField {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Double getConfidence() {
+        return confidence;
+    }
+
+    public void setConfidence(Double confidence) {
+        this.confidence = confidence;
+    }
+
+    /** True when the admin replaced what the AI read with a different value. */
+    public boolean isCorrected() {
+        return originalValue != null && value != null && !value.strip().equals(originalValue.strip());
     }
 
     public Integer getBoxPage() {

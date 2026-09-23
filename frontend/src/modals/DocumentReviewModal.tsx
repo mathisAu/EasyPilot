@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
-import { Check, Download, FileText, Loader2, RefreshCw, Save, Trash2, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { AlertTriangle, Check, Crosshair, Download, FileText, Loader2, RefreshCw, Save, Trash2, X } from 'lucide-react';
 import {
   deleteDocument,
   downloadUrl,
   getExtractedFields,
+  getPageCount,
   listDocuments,
-  previewUrl,
+  pageImageUrl,
   redactedUrl,
   retryExtraction,
   summaryUrl,
@@ -23,6 +24,13 @@ interface DocumentReviewModalProps {
   onStatusChanged: (updated: DocumentType) => void;
   onFieldsSaved: () => void;
   onDocumentCountChange: (typeId: number, count: number) => void;
+}
+
+/** Below this AI certainty a field is flagged for the admin to check. */
+const LOW_CONFIDENCE = 0.7;
+
+function needsCheck(field: ExtractedField): boolean {
+  return field.confidence !== null && field.confidence < LOW_CONFIDENCE && !field.corrected;
 }
 
 function formatFileSize(bytes: number): string {
@@ -53,10 +61,27 @@ export function DocumentReviewModal({
   const [error, setError] = useState('');
   const [previewMode, setPreviewMode] = useState<'original' | 'edited'>('edited');
   const [previewVersion, setPreviewVersion] = useState(0);
+  const [pageCount, setPageCount] = useState(1);
+  const [activeField, setActiveField] = useState<string | null>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
 
   const selectedDoc = documents.find((doc) => doc.id === selectedDocId) ?? null;
   const canShowEdited = selectedDoc?.extractionStatus === 'DONE' && fields.some((field) => field.hasLocation);
   const showEdited = canShowEdited && previewMode === 'edited';
+  const activeBox = fields.find((field) => field.fieldName === activeField && field.hasLocation) ?? null;
+  const fieldsToCheck = fields.filter(needsCheck).length;
+
+  useEffect(() => {
+    if (selectedDocId === null) return;
+    setActiveField(null);
+    getPageCount(selectedDocId)
+      .then(setPageCount)
+      .catch(() => setPageCount(1));
+  }, [selectedDocId]);
+
+  useEffect(() => {
+    highlightRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [activeField]);
 
   useEffect(() => {
     setLoading(true);
@@ -180,11 +205,6 @@ export function DocumentReviewModal({
   }
 
   const fileKind = selectedDoc?.contentType.startsWith('image/') ? 'afbeelding' : 'PDF';
-  const previewSrc = selectedDoc
-    ? showEdited
-      ? `${redactedUrl(selectedDoc.id)}?disposition=inline&v=${previewVersion}`
-      : previewUrl(selectedDoc.id)
-    : '';
   const downloadHref = selectedDoc ? (showEdited ? redactedUrl(selectedDoc.id) : downloadUrl(selectedDoc.id)) : '';
 
   return (
@@ -270,19 +290,31 @@ export function DocumentReviewModal({
                   </button>
                 </span>
               </div>
-              <div className="review-preview">
-                {selectedDoc.contentType.startsWith('image/') ? (
-                  <img key={previewSrc} src={previewSrc} alt={selectedDoc.filename} />
-                ) : (
-                  // The fragment suppresses the browser PDF viewer's own dark toolbar
-                  // and thumbnail sidebar, which otherwise clash with the app's design.
-                  // Keyed on the src so a fresh copy is actually reloaded after saving.
-                  <embed
-                    key={previewSrc}
-                    src={`${previewSrc}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
-                    type={selectedDoc.contentType}
-                  />
-                )}
+              {/* Pages are server-rendered images rather than the browser's PDF plugin,
+                  so a field's location can be highlighted on top of them. */}
+              <div className="review-preview review-pages">
+                {Array.from({ length: pageCount }, (_, page) => (
+                  <div className="review-page" key={page}>
+                    <img
+                      src={pageImageUrl(selectedDoc.id, page, showEdited, showEdited ? previewVersion : 0)}
+                      alt={`${selectedDoc.filename}, pagina ${page + 1}`}
+                    />
+                    {activeBox && (activeBox.boxPage ?? 0) === page && (
+                      <div
+                        ref={highlightRef}
+                        className="field-highlight"
+                        style={{
+                          left: `${(activeBox.boxX ?? 0) * 100}%`,
+                          top: `${(activeBox.boxY ?? 0) * 100}%`,
+                          width: `${(activeBox.boxWidth ?? 0) * 100}%`,
+                          height: `${(activeBox.boxHeight ?? 0) * 100}%`,
+                        }}
+                      >
+                        <span>{activeBox.fieldName}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
               <div className="review-card-footer">
                 <span className="file-name">{selectedDoc.filename}</span>
@@ -293,11 +325,19 @@ export function DocumentReviewModal({
             <div className="review-card review-fields-card">
               <div className="review-card-header">
                 <span>Uitgelezen gegevens</span>
-                {selectedDoc.extractionStatus === 'DONE' && (
-                  <span className="extraction-done-badge">
-                    <Check size={12} /> Uitgelezen
-                  </span>
-                )}
+                {selectedDoc.extractionStatus === 'DONE' &&
+                  (fieldsToCheck > 0 ? (
+                    <span
+                      className="status-pill status-amber has-tooltip"
+                      data-tooltip="De AI was bij deze velden niet zeker. Controleer ze in het document."
+                    >
+                      <AlertTriangle size={11} /> {fieldsToCheck} {fieldsToCheck === 1 ? 'veld' : 'velden'} controleren
+                    </span>
+                  ) : (
+                    <span className="extraction-done-badge">
+                      <Check size={12} /> Uitgelezen
+                    </span>
+                  ))}
               </div>
 
               <div className="review-fields">
@@ -321,11 +361,38 @@ export function DocumentReviewModal({
                 {!loadingFields && fields.length > 0 && (
                   <>
                     {fields.map((field) => (
-                      <div className="review-field-row" key={field.fieldName}>
+                      <div
+                        className={`review-field-row ${activeField === field.fieldName ? 'active' : ''} ${
+                          needsCheck(field) ? 'needs-check' : ''
+                        }`}
+                        key={field.fieldName}
+                      >
                         <label>
-                          {field.fieldName}
+                          <span className="review-field-label">
+                            {field.fieldName}
+                            {needsCheck(field) && (
+                              <span
+                                className="confidence-flag has-tooltip tooltip-start"
+                                data-tooltip={`De AI is hier maar ${Math.round((field.confidence ?? 0) * 100)}% zeker van. Controleer deze waarde.`}
+                              >
+                                <AlertTriangle size={11} /> Controleren
+                              </span>
+                            )}
+                            {field.hasLocation && (
+                              <button
+                                type="button"
+                                className="locate-button"
+                                onClick={() => setActiveField(field.fieldName)}
+                                title="Toon in document"
+                                aria-label={`Toon ${field.fieldName} in het document`}
+                              >
+                                <Crosshair size={12} />
+                              </button>
+                            )}
+                          </span>
                           <input
                             value={values[field.fieldName] ?? ''}
+                            onFocus={() => setActiveField(field.fieldName)}
                             onChange={(event) => {
                               const nextValue = event.target.value;
                               setValues((current) => ({ ...current, [field.fieldName]: nextValue }));

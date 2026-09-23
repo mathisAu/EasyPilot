@@ -413,3 +413,19 @@ button.sidebar-footer:hover { background: #18355a; }
 .type-card-icons .row-action { margin-left: 0; }
 @media (max-width: 1200px) { .type-grid-compact { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) { .type-grid-compact { grid-template-columns: 1fr; } .filter-panel-row .result-count { margin-left: 0; } }
+
+/* Review preview as rendered page images, with a highlight for the selected field. */
+.review-preview-card .review-preview.review-pages { display: block; min-height: 340px; max-height: 100%; overflow-y: auto; }
+.review-page { position: relative; margin: 0 auto 12px; border: 1px solid #dbe4ec; border-radius: 6px; overflow: hidden; background: #fff; box-shadow: 0 1px 3px rgba(21, 41, 66, .08); }
+.review-page:last-child { margin-bottom: 0; }
+.review-page img { display: block; width: 100%; height: auto; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
+.field-highlight { position: absolute; border: 2px solid #1689e6; border-radius: 4px; background: rgba(22, 137, 230, .14); box-shadow: 0 0 0 4px rgba(22, 137, 230, .18); animation: field-highlight-in .35s ease; pointer-events: none; }
+.field-highlight span { position: absolute; bottom: calc(100% + 4px); left: -2px; padding: 2px 7px; color: #fff; border-radius: 4px; background: #1689e6; font-size: 10px; font-weight: 700; white-space: nowrap; }
+@keyframes field-highlight-in { from { opacity: 0; transform: scale(1.12); } to { opacity: 1; transform: scale(1); } }
+.review-field-row { padding: 4px 6px; margin: 0 -6px; border-radius: 8px; transition: background .15s ease; }
+.review-field-row.active { background: #eef7ff; }
+.review-field-label { display: flex; align-items: center; gap: 6px; }
+.review-field-row.needs-check input { border-color: #efc27a; background: #fffbf1; }
+.confidence-flag { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; color: #ae781b; border-radius: 10px; background: #fff4dc; font-size: 10px; font-weight: 700; }
+.locate-button { display: grid; place-items: center; width: 20px; height: 20px; margin-left: auto; padding: 0; color: #8b9aae; border: 0; border-radius: 5px; background: transparent; }
+.locate-button:hover, .review-field-row.active .locate-button { color: #1689e6; background: #e3f1fd; }
