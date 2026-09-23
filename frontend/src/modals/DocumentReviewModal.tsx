@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw, Save, X } from 'lucide-react';
+import { Check, RefreshCw, Save, X } from 'lucide-react';
 import {
   getExtractedFields,
   listDocuments,
@@ -23,6 +23,7 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
   const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
   const [fields, setFields] = useState<ExtractedField[]>([]);
   const [values, setValues] = useState<Record<string, string>>({});
+  const [confirmed, setConfirmed] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [loadingFields, setLoadingFields] = useState(false);
   const [savingFields, setSavingFields] = useState(false);
@@ -49,10 +50,13 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
       .then((result) => {
         setFields(result);
         const initial: Record<string, string> = {};
+        const initialConfirmed: Record<string, boolean> = {};
         result.forEach((field) => {
           initial[field.fieldName] = field.value ?? '';
+          initialConfirmed[field.fieldName] = Boolean(field.value && field.value.trim().length > 0);
         });
         setValues(initial);
+        setConfirmed(initialConfirmed);
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Kon uitgelezen velden niet laden.'))
       .finally(() => setLoadingFields(false));
@@ -157,13 +161,30 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
               {!loadingFields && fields.length > 0 && (
                 <>
                   {fields.map((field) => (
-                    <label key={field.fieldName}>
-                      {field.fieldName}
-                      <input
-                        value={values[field.fieldName] ?? ''}
-                        onChange={(event) => setValues((current) => ({ ...current, [field.fieldName]: event.target.value }))}
-                      />
-                    </label>
+                    <div className="review-field-row" key={field.fieldName}>
+                      <label>
+                        {field.fieldName}
+                        <input
+                          value={values[field.fieldName] ?? ''}
+                          onChange={(event) => {
+                            const nextValue = event.target.value;
+                            setValues((current) => ({ ...current, [field.fieldName]: nextValue }));
+                          }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className={`field-confirm-toggle ${confirmed[field.fieldName] ? 'confirmed' : ''}`}
+                        onClick={() =>
+                          setConfirmed((current) => ({ ...current, [field.fieldName]: !current[field.fieldName] }))
+                        }
+                        aria-pressed={Boolean(confirmed[field.fieldName])}
+                        aria-label={`${field.fieldName} ${confirmed[field.fieldName] ? 'bevestigd' : 'niet bevestigd'}`}
+                        title="Bevestig dit veld"
+                      >
+                        <Check size={14} />
+                      </button>
+                    </div>
                   ))}
                   <button type="button" className="primary-button" onClick={handleSaveFields} disabled={savingFields}>
                     <Save size={16} /> {savingFields ? 'Bezig...' : 'Opslaan'}

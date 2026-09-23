@@ -144,4 +144,9 @@ button { cursor: pointer; }
 .review-preview embed, .review-preview img { width: 100%; height: 100%; object-fit: contain; }
 .review-fields { overflow-y: auto; padding-right: 4px; }
 .review-fields label { display: block; margin-top: 10px; }
+.review-field-row { display: flex; align-items: flex-end; gap: 8px; }
+.review-field-row label { flex: 1; }
+.field-confirm-toggle { display: grid; flex: 0 0 auto; place-items: center; width: 30px; height: 30px; margin-bottom: 1px; color: #a0adba; border: 1px solid #dce5ee; border-radius: 7px; background: #fff; cursor: pointer; }
+.field-confirm-toggle:hover { border-color: #2da16c; color: #2da16c; }
+.field-confirm-toggle.confirmed { color: #fff; border-color: #2da16c; background: #2da16c; }
 @media (max-width: 720px) { .review-layout { grid-template-columns: 1fr; } .review-preview { min-height: 220px; } }
