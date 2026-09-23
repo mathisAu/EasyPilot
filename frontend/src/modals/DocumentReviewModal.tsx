@@ -18,6 +18,7 @@ interface DocumentReviewModalProps {
   documentType: DocumentType;
   onClose: () => void;
   onStatusChanged: (updated: DocumentType) => void;
+  onFieldsSaved: () => void;
 }
 
 function formatFileSize(bytes: number): string {
@@ -26,7 +27,7 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: DocumentReviewModalProps) {
+export function DocumentReviewModal({ documentType, onClose, onStatusChanged, onFieldsSaved }: DocumentReviewModalProps) {
   const [documents, setDocuments] = useState<DocumentFile[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
   const [fields, setFields] = useState<ExtractedField[]>([]);
@@ -105,6 +106,7 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
       }));
       const updated = await updateExtractedFields(selectedDocId, payload);
       setFields(updated);
+      onFieldsSaved();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Opslaan is niet gelukt.');
     } finally {

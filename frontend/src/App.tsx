@@ -242,6 +242,7 @@ function AppShell() {
           documentType={reviewingType}
           onClose={() => setReviewingType(null)}
           onStatusChanged={handleStatusChanged}
+          onFieldsSaved={() => notify('Gegevens opgeslagen')}
         />
       )}
       {viewingOrganization && (
