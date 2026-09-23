@@ -7,6 +7,7 @@ import { RequestsPage } from './pages/RequestsPage';
 import { DocumentTypesPage } from './pages/DocumentTypesPage';
 import { OrganizationsPage } from './pages/OrganizationsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { SupportPage } from './pages/SupportPage';
 import { LoginPage } from './pages/LoginPage';
 import { DocumentTypeDrawer } from './modals/DocumentTypeDrawer';
 import { DocumentTypeFormModal } from './modals/DocumentTypeFormModal';
@@ -170,6 +171,8 @@ function AppShell() {
         );
       case 'Instellingen':
         return <SettingsPage />;
+      case 'Help & support':
+        return <SupportPage />;
       case 'Documentaanvragen':
       default:
         return (
