@@ -22,7 +22,7 @@ export function ticketTurn(
   const supportMustRespond = lastMessageAuthorRole !== 'ADMIN';
   if (viewerRole === 'ADMIN') {
     return supportMustRespond
-      ? { label: 'Reactie vereist', tone: 'amber', description: 'De klant wacht op een reactie van support.' }
+      ? { label: 'Reactie vereist', tone: 'amber', description: 'De klant wacht op een reactie.' }
       : { label: 'Wacht op klant', tone: 'blue', description: 'Support heeft gereageerd; de klant is aan zet.' };
   }
   return supportMustRespond
