@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, Download, FileText, Loader2, RefreshCw, Save, Trash2, X } from 'lucide-react';
 import {
   deleteDocument,
+  downloadUrl,
   getExtractedFields,
   listDocuments,
   previewUrl,
@@ -50,8 +51,12 @@ export function DocumentReviewModal({
   const [status, setStatus] = useState<RequestStatus>(documentType.status);
   const [savingStatus, setSavingStatus] = useState(false);
   const [error, setError] = useState('');
+  const [previewMode, setPreviewMode] = useState<'original' | 'edited'>('edited');
+  const [previewVersion, setPreviewVersion] = useState(0);
 
   const selectedDoc = documents.find((doc) => doc.id === selectedDocId) ?? null;
+  const canShowEdited = selectedDoc?.extractionStatus === 'DONE' && fields.some((field) => field.hasLocation);
+  const showEdited = canShowEdited && previewMode === 'edited';
 
   useEffect(() => {
     setLoading(true);
@@ -116,6 +121,8 @@ export function DocumentReviewModal({
       }));
       const updated = await updateExtractedFields(selectedDocId, payload);
       setFields(updated);
+      setPreviewVersion((version) => version + 1);
+      setPreviewMode('edited');
       onFieldsSaved();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Opslaan is niet gelukt.');
@@ -173,6 +180,12 @@ export function DocumentReviewModal({
   }
 
   const fileKind = selectedDoc?.contentType.startsWith('image/') ? 'afbeelding' : 'PDF';
+  const previewSrc = selectedDoc
+    ? showEdited
+      ? `${redactedUrl(selectedDoc.id)}?disposition=inline&v=${previewVersion}`
+      : previewUrl(selectedDoc.id)
+    : '';
+  const downloadHref = selectedDoc ? (showEdited ? redactedUrl(selectedDoc.id) : downloadUrl(selectedDoc.id)) : '';
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -214,10 +227,36 @@ export function DocumentReviewModal({
             <div className="review-card review-preview-card">
               <div className="review-card-header">
                 <span>
-                  <FileText size={14} /> Origineel document ({fileKind})
+                  <FileText size={14} /> {showEdited ? 'Aangepaste kopie' : 'Origineel document'} ({fileKind})
                 </span>
                 <span className="review-card-actions">
-                  <a href={previewUrl(selectedDoc.id)} target="_blank" rel="noreferrer" title="Downloaden" aria-label="Document downloaden">
+                  {canShowEdited && (
+                    <span className="preview-toggle" role="group" aria-label="Welke versie tonen">
+                      <button
+                        type="button"
+                        className={!showEdited ? 'active' : ''}
+                        onClick={() => setPreviewMode('original')}
+                        aria-pressed={!showEdited}
+                      >
+                        Origineel
+                      </button>
+                      <button
+                        type="button"
+                        className={showEdited ? 'active' : ''}
+                        onClick={() => setPreviewMode('edited')}
+                        aria-pressed={showEdited}
+                      >
+                        Aangepast
+                      </button>
+                    </span>
+                  )}
+                  <a
+                    href={downloadHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={showEdited ? 'Aangepaste kopie downloaden' : 'Origineel downloaden'}
+                    aria-label={showEdited ? 'Aangepaste kopie downloaden' : 'Origineel downloaden'}
+                  >
                     <Download size={14} />
                   </a>
                   <button
@@ -233,12 +272,14 @@ export function DocumentReviewModal({
               </div>
               <div className="review-preview">
                 {selectedDoc.contentType.startsWith('image/') ? (
-                  <img src={previewUrl(selectedDoc.id)} alt={selectedDoc.filename} />
+                  <img key={previewSrc} src={previewSrc} alt={selectedDoc.filename} />
                 ) : (
                   // The fragment suppresses the browser PDF viewer's own dark toolbar
                   // and thumbnail sidebar, which otherwise clash with the app's design.
+                  // Keyed on the src so a fresh copy is actually reloaded after saving.
                   <embed
-                    src={`${previewUrl(selectedDoc.id)}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+                    key={previewSrc}
+                    src={`${previewSrc}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
                     type={selectedDoc.contentType}
                   />
                 )}
@@ -325,40 +366,28 @@ export function DocumentReviewModal({
                       De samenvatting bevat alleen de aangevinkte, opgeslagen velden. Sla eerst op voordat je downloadt.
                     </p>
 
-                    {selectedDoc.extractionStatus === 'DONE' && (
-                      <>
-                        {fields.some((field) => field.hasLocation) ? (
-                          <>
-                            <a
-                              href={redactedUrl(selectedDoc.id)}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="secondary-button review-redacted-link"
-                              title="Downloadt het originele document met de opgeslagen wijzigingen erin verwerkt"
-                            >
-                              <Download size={14} /> Aangepast document downloaden
-                            </a>
-                            <p className="modal-description review-summary-hint">
-                              Dit is het originele bestand zelf: uitgevinkte of gewijzigde velden worden op hun
-                              plek overschilderd. Niet elk veld is altijd gevonden — controleer het resultaat.
+                    {selectedDoc.extractionStatus === 'DONE' &&
+                      (canShowEdited ? (
+                        <p className="modal-description review-summary-hint">
+                          Na opslaan toont het voorbeeld links een aangepaste kopie: weggehaalde of uitgevinkte
+                          velden worden daarin gewist, gewijzigde velden overschreven. Het origineel blijft
+                          bewaard. Controleer de kopie, want niet elk veld wordt altijd precies gevonden.
+                        </p>
+                      ) : (
+                        <div className="info-callout">
+                          <div>
+                            <strong>Posities nog niet bekend</strong>
+                            <p>
+                              Dit document is uitgelezen voordat de aangepaste kopie bestond. Lees het opnieuw uit
+                              om je wijzigingen ook in het bestand te zien. Let op: eerdere aanpassingen aan de
+                              velden gaan daarbij verloren.
                             </p>
-                          </>
-                        ) : (
-                          <div className="info-callout">
-                            <div>
-                              <strong>Posities nog niet bekend</strong>
-                              <p>
-                                Dit document is uitgelezen vóór deze functie bestond. Lees het opnieuw uit om het
-                                originele bestand met wijzigingen te kunnen downloaden.
-                              </p>
-                            </div>
-                            <button type="button" className="secondary-button" onClick={handleRetryExtraction} disabled={retrying}>
-                              <RefreshCw size={14} /> {retrying ? 'Bezig...' : 'Opnieuw uitlezen'}
-                            </button>
                           </div>
-                        )}
-                      </>
-                    )}
+                          <button type="button" className="secondary-button" onClick={handleRetryExtraction} disabled={retrying}>
+                            <RefreshCw size={14} /> {retrying ? 'Bezig...' : 'Opnieuw uitlezen'}
+                          </button>
+                        </div>
+                      ))}
                   </>
                 )}
 

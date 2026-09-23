@@ -95,6 +95,7 @@ public class ExtractionTransactionSupport {
                 field.setDocument(document);
                 field.setFieldName(fieldName);
                 field.setValue(extracted != null ? extracted.value() : null);
+                field.setOriginalValue(field.getValue());
                 FieldBox box = extracted != null ? extracted.box() : null;
                 if (box != null) {
                     field.setBoxPage(box.page());

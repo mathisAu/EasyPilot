@@ -33,6 +33,11 @@ public class ExtractedField {
     @Column(name = "field_value", columnDefinition = "TEXT")
     private String value;
 
+    // What the AI originally read, kept so the edited copy of the file only
+    // touches fields the admin actually changed or removed.
+    @Column(name = "original_value", columnDefinition = "TEXT")
+    private String originalValue;
+
     @Column(nullable = false)
     private boolean edited = false;
 
@@ -87,6 +92,14 @@ public class ExtractedField {
 
     public void setValue(String value) {
         this.value = value;
+    }
+
+    public String getOriginalValue() {
+        return originalValue;
+    }
+
+    public void setOriginalValue(String originalValue) {
+        this.originalValue = originalValue;
     }
 
     public boolean isEdited() {

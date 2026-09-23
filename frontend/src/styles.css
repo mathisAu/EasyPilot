@@ -160,6 +160,9 @@ button { cursor: pointer; }
 .review-card-header a { display: grid; place-items: center; padding: 4px; color: #71829a; border-radius: 5px; }
 .review-card-header a:hover { color: #1687e5; background: #eef6fd; }
 .review-card-actions { display: inline-flex; align-items: center; gap: 6px; }
+.preview-toggle { display: inline-flex; padding: 2px; border: 1px solid #dbe4ed; border-radius: 7px; background: #fff; }
+.preview-toggle button { padding: 3px 9px; color: #6d8198; border: 0; border-radius: 5px; background: transparent; font-size: 11px; font-weight: 700; }
+.preview-toggle button.active { color: #fff; background: #1689e6; }
 .review-delete-button { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; color: #c4553a; border: 1px solid #f3cfc5; border-radius: 6px; background: #fff; font-size: 11px; font-weight: 700; }
 .review-delete-button:hover { color: #fff; border-color: #d5573b; background: #d5573b; }
 .folder-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 20px; }

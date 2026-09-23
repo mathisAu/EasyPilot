@@ -89,14 +89,20 @@ public class DocumentController {
 
     @GetMapping("/api/documents/{id}/redacted")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<byte[]> downloadRedacted(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<byte[]> downloadRedacted(@PathVariable Long id,
+                                                   @RequestParam(defaultValue = "attachment") String disposition,
+                                                   Authentication authentication) {
         AppUser currentUser = currentUserService.require(authentication);
         DocumentService.RedactedFile file = service.generateRedactedFile(id, currentUser);
-        ContentDisposition contentDisposition = ContentDisposition.attachment()
+        ContentDisposition.Builder builder = "inline".equalsIgnoreCase(disposition)
+                ? ContentDisposition.inline()
+                : ContentDisposition.attachment();
+        ContentDisposition contentDisposition = builder
                 .filename(file.filename(), StandardCharsets.UTF_8)
                 .build();
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .contentType(MediaType.parseMediaType(file.contentType()))
                 .body(file.content());
     }

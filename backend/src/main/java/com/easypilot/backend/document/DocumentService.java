@@ -98,6 +98,7 @@ public class DocumentService {
         List<DocumentRedactor.FieldEdit> edits = extractedFieldRepository.findByDocumentIdOrderByIdAsc(documentId)
                 .stream()
                 .filter(ExtractedField::hasBox)
+                .filter(this::isChangedByAdmin)
                 .map(field -> new DocumentRedactor.FieldEdit(
                         field.getBoxPage() != null ? field.getBoxPage() : 0,
                         field.getBoxX(), field.getBoxY(), field.getBoxWidth(), field.getBoxHeight(),
@@ -106,12 +107,28 @@ public class DocumentService {
 
         byte[] originalBytes = fileStorageService.readAllBytes(document.getStoredFilename());
         String contentType = document.getContentType();
-        byte[] content = "application/pdf".equalsIgnoreCase(contentType)
-                ? DocumentRedactor.redactPdf(originalBytes, edits)
-                : DocumentRedactor.redactImage(originalBytes, imageFormatFor(contentType), edits);
+        byte[] content;
+        if (edits.isEmpty()) {
+            content = originalBytes;
+        } else if ("application/pdf".equalsIgnoreCase(contentType)) {
+            content = DocumentRedactor.redactPdf(originalBytes, edits);
+        } else {
+            content = DocumentRedactor.redactImage(originalBytes, imageFormatFor(contentType), edits);
+        }
 
         String filename = document.getDocumentType().getName() + " - aangepast" + extensionOf(document.getOriginalFilename());
         return new RedactedFile(filename, contentType, content);
+    }
+
+    // Untouched fields are left exactly as they appear in the source, rather than
+    // being painted over and redrawn in a different font.
+    private boolean isChangedByAdmin(ExtractedField field) {
+        String value = field.getValue();
+        if (!field.isIncluded() || value == null || value.isBlank()) {
+            return true;
+        }
+        String original = field.getOriginalValue();
+        return original != null && !value.strip().equals(original.strip());
     }
 
     private String imageFormatFor(String contentType) {
