@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import {
+  Check,
+  ChevronDown,
   Eye,
   FileCheck2,
   FileText,
@@ -56,12 +58,35 @@ export function RequestsPage({
   const [newFolderName, setNewFolderName] = useState('');
   const [folderError, setFolderError] = useState('');
   const [showPicker, setShowPicker] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     listFolders()
       .then(setFolders)
       .catch((err) => setFolderError(err instanceof ApiError ? err.message : 'Kon mappen niet laden.'));
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setMenuOpen(false);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setMenuOpen(false);
+    }
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [menuOpen]);
+
+  const sortedFolders = useMemo(
+    () => [...folders].sort((a, b) => a.name.localeCompare(b.name, 'nl', { sensitivity: 'base' })),
+    [folders]
+  );
 
   const filteredTypes = useMemo(
     () =>
@@ -201,17 +226,52 @@ export function RequestsPage({
           >
             Zonder map <span>{types.filter((type) => !type.folderId).length}</span>
           </button>
-          {folders.map((folder) => (
+          <div className="folder-menu" ref={menuRef}>
             <button
               type="button"
-              key={folder.id}
-              className={`folder-chip ${folderFilter === folder.id ? 'active' : ''}`}
-              onClick={() => setFolderFilter(folder.id)}
+              className={`folder-chip ${activeFolder ? 'active' : ''}`}
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
             >
-              <FolderIcon size={13} /> {folder.name}{' '}
-              <span>{types.filter((type) => type.folderId === folder.id).length}</span>
+              <FolderIcon size={13} /> {activeFolder ? activeFolder.name : 'Mappen'}{' '}
+              <span>
+                {activeFolder ? types.filter((type) => type.folderId === activeFolder.id).length : folders.length}
+              </span>
+              <ChevronDown size={13} />
             </button>
-          ))}
+            {menuOpen && (
+              <div className="folder-menu-panel" role="menu">
+                <p className="folder-menu-heading">Alle mappen (A-Z)</p>
+                {sortedFolders.length === 0 ? (
+                  <p className="folder-menu-empty">Nog geen mappen. Maak er een aan met "Nieuwe map".</p>
+                ) : (
+                  <ul>
+                    {sortedFolders.map((folder) => (
+                      <li key={folder.id}>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className={`folder-menu-item ${folderFilter === folder.id ? 'active' : ''}`}
+                          onClick={() => {
+                            setFolderFilter(folder.id);
+                            setMenuOpen(false);
+                          }}
+                        >
+                          <FolderIcon size={14} />
+                          <span className="folder-menu-name">{folder.name}</span>
+                          <span className="folder-menu-count">
+                            {types.filter((type) => type.folderId === folder.id).length}
+                          </span>
+                          {folderFilter === folder.id && <Check size={14} className="folder-menu-check" />}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
           {creatingFolder ? (
             <form className="folder-new-form" onSubmit={handleCreateFolder}>
               <input
