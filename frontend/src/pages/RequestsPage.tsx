@@ -125,7 +125,7 @@ export function RequestsPage({
         <div className="section-title">
           <div>
             <p className="eyebrow">Overzicht aanvragen</p>
-            <h2>Recente documentaanvragen</h2>
+            <h2>Documentaanvragen</h2>
           </div>
           <button
             className={`filter-button ${statusFilter ? 'filter-button-active' : ''}`}
@@ -133,26 +133,6 @@ export function RequestsPage({
           >
             <SlidersHorizontal size={16} /> Filter
           </button>
-        </div>
-
-        <div className="status-tabs" role="tablist" aria-label="Status">
-          <button
-            type="button"
-            className={`status-tab ${!statusFilter ? 'active' : ''}`}
-            onClick={() => statusFilter && onToggleStatusFilter(statusFilter)}
-          >
-            Alle <span>{types.length}</span>
-          </button>
-          {stages.map((stage) => (
-            <button
-              key={stage.label}
-              type="button"
-              className={`status-tab ${statusFilter === stage.label ? 'active' : ''}`}
-              onClick={() => onToggleStatusFilter(stage.label)}
-            >
-              {stage.label} <span>{types.filter((type) => type.status === stage.label).length}</span>
-            </button>
-          ))}
         </div>
 
         <FolderBar
