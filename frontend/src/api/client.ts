@@ -20,6 +20,20 @@ function readCookie(name: string): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+// The XSRF-TOKEN cookie is only set once a request has round-tripped through
+// the backend's CSRF filter. The app's initial /api/auth/me GET sets it on
+// mount, but a mutating request (e.g. login submitted immediately) can race
+// ahead of that response and go out with no cookie yet, which the backend
+// hard-rejects with 403 — reproduced via curl: a POST with no prior cookie
+// always gets 403 regardless of credentials. Priming the cookie first makes
+// every mutating call safe against that race, not just login.
+async function ensureCsrfCookie(): Promise<string | null> {
+  const existing = readCookie('XSRF-TOKEN');
+  if (existing) return existing;
+  await fetch('/api/auth/me', { credentials: 'include' });
+  return readCookie('XSRF-TOKEN');
+}
+
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const method = options.method ?? 'GET';
   const headers: Record<string, string> = {};
@@ -33,7 +47,7 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   }
 
   if (method !== 'GET' && method !== 'HEAD') {
-    const csrfToken = readCookie('XSRF-TOKEN');
+    const csrfToken = await ensureCsrfCookie();
     if (csrfToken) {
       headers['X-XSRF-TOKEN'] = csrfToken;
     }
