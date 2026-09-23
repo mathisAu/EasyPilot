@@ -214,6 +214,10 @@ function AppShell() {
           onEdit={handleOpenEditType}
           onDelete={handleDeleteType}
           onDocumentCountChange={handleDocumentCountChange}
+          onOpenReview={(type) => {
+            setViewingType(null);
+            setReviewingType(type);
+          }}
         />
       )}
       {reviewingType && (

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { FileText, Pencil, Trash2, Upload, X } from 'lucide-react';
+import { Check, Eye, FileText, Pencil, Trash2, Upload, X } from 'lucide-react';
 import { Drawer } from '../components/Drawer';
 import { StatusPill } from '../components/StatusPill';
 import { toneFor } from '../data';
@@ -13,6 +13,7 @@ interface DocumentTypeDrawerProps {
   onEdit: (type: DocumentType) => void;
   onDelete: (id: number) => void;
   onDocumentCountChange: (typeId: number, count: number) => void;
+  onOpenReview: (type: DocumentType) => void;
 }
 
 function formatFileSize(bytes: number): string {
@@ -27,6 +28,7 @@ export function DocumentTypeDrawer({
   onEdit,
   onDelete,
   onDocumentCountChange,
+  onOpenReview,
 }: DocumentTypeDrawerProps) {
   const [documents, setDocuments] = useState<DocumentFile[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
@@ -104,6 +106,9 @@ export function DocumentTypeDrawer({
       </div>
 
       <div className="drawer-actions-row">
+        <button type="button" className="secondary-button" onClick={() => onOpenReview(documentType)}>
+          <Eye size={16} /> Uitgelezen gegevens
+        </button>
         <button type="button" className="secondary-button" onClick={() => onEdit(documentType)}>
           <Pencil size={16} /> Bewerken
         </button>
@@ -157,6 +162,16 @@ export function DocumentTypeDrawer({
                 </span>
               )}
               {doc.extractionStatus === 'IN_PROGRESS' && <span className="file-size">Extractie bezig...</span>}
+              {doc.extractionStatus === 'DONE' && (
+                <button
+                  type="button"
+                  className="file-size extraction-done-link"
+                  onClick={() => onOpenReview(documentType)}
+                  title="Bekijk uitgelezen gegevens"
+                >
+                  <Check size={12} /> Uitgelezen
+                </button>
+              )}
               <span className="file-size">{formatFileSize(doc.sizeBytes)}</span>
               <button type="button" onClick={() => handleDeleteDocument(doc.id)} aria-label={`Verwijder ${doc.filename}`}>
                 <X size={14} />

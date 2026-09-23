@@ -73,6 +73,8 @@ button { cursor: pointer; }
 .file-list .file-size { color: #8b9aae; font-size: 11px; }
 .file-list li button { display: grid; place-items: center; padding: 3px; color: #96a7b8; border: 0; border-radius: 5px; background: transparent; }
 .file-list li button:hover { color: #d5573b; background: #fdeeea; }
+.file-list li button.extraction-done-link { display: inline-flex; align-items: center; gap: 4px; width: auto; padding: 3px 8px; color: #2da16c; font-size: 11px; font-weight: 600; background: #e7f8ef; }
+.file-list li button.extraction-done-link:hover { color: #1f7a51; background: #d8f2e3; }
 
 /* Wizard: desired-fields toggle list */
 .field-toggle-list { display: grid; gap: 4px; margin: 16px 0 0; padding: 0; list-style: none; }
