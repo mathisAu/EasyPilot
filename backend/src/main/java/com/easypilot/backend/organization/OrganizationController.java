@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -48,5 +49,16 @@ public class OrganizationController {
             throw new ResourceNotFoundException("Geen organisatie gekoppeld aan dit account");
         }
         return service.findForCustomer(currentUser.getOrganization().getId());
+    }
+
+    @PatchMapping("/me")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public OrganizationDto updateMyDetails(@Valid @RequestBody OrganizationDetailsRequest request,
+                                           Authentication authentication) {
+        AppUser currentUser = currentUserService.require(authentication);
+        if (currentUser.getOrganization() == null) {
+            throw new ResourceNotFoundException("Geen organisatie gekoppeld aan dit account");
+        }
+        return service.updateDetails(currentUser.getOrganization().getId(), request);
     }
 }

@@ -1,5 +1,5 @@
 import { apiFetch } from './client';
-import type { Organization } from '../types';
+import type { Organization, OrganizationDetails } from '../types';
 
 export interface CreateOrganizationInput {
   name: string;
@@ -17,4 +17,8 @@ export async function createOrganization(input: CreateOrganizationInput): Promis
 
 export async function getMyOrganization(): Promise<Organization> {
   return apiFetch<Organization>('/api/organizations/me');
+}
+
+export async function updateMyOrganization(details: OrganizationDetails): Promise<Organization> {
+  return apiFetch<Organization>('/api/organizations/me', { method: 'PATCH', json: details });
 }

@@ -92,7 +92,18 @@ export function ClientPortal() {
   function renderPage() {
     switch (active) {
       case 'Mijn organisatie':
-        return <MyOrganizationPage organization={organization} loading={loadingOrganization} />;
+        return (
+          <MyOrganizationPage
+            organization={organization}
+            loading={loadingOrganization}
+            types={documentTypes}
+            onUpdated={(updated) => {
+              setOrganization(updated);
+              notify('Organisatiegegevens opgeslagen');
+            }}
+            onOpenSettings={() => navigate('Instellingen')}
+          />
+        );
       case 'Instellingen':
         return <SettingsPage />;
       case 'Hulp':

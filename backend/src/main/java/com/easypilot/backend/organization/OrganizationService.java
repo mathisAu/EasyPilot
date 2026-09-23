@@ -62,6 +62,30 @@ public class OrganizationService {
         return toDto(organization);
     }
 
+    @Transactional
+    public OrganizationDto updateDetails(Long organizationId, OrganizationDetailsRequest request) {
+        Organization organization = organizationRepository.findById(organizationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Organisatie niet gevonden"));
+        organization.setAddress(clean(request.address()));
+        organization.setPostalCode(clean(request.postalCode()) != null ? clean(request.postalCode()).toUpperCase() : null);
+        organization.setCity(clean(request.city()));
+        organization.setKvkNumber(clean(request.kvkNumber()));
+        organization.setVatNumber(clean(request.vatNumber()) != null ? clean(request.vatNumber()).toUpperCase() : null);
+        organization.setWebsite(clean(request.website()));
+        organization.setContactName(clean(request.contactName()));
+        organization.setContactEmail(clean(request.contactEmail()));
+        organization.setContactPhone(clean(request.contactPhone()));
+        return toDto(organizationRepository.save(organization));
+    }
+
+    private String clean(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     private OrganizationDto toDto(Organization organization) {
         String customerUsername = appUserRepository.findFirstByOrganizationId(organization.getId())
                 .map(AppUser::getUsername)
@@ -72,7 +96,16 @@ public class OrganizationService {
                 organization.getName(),
                 customerUsername,
                 (int) documentTypeCount,
-                organization.getCreatedAt()
+                organization.getCreatedAt(),
+                organization.getAddress(),
+                organization.getPostalCode(),
+                organization.getCity(),
+                organization.getKvkNumber(),
+                organization.getVatNumber(),
+                organization.getWebsite(),
+                organization.getContactName(),
+                organization.getContactEmail(),
+                organization.getContactPhone()
         );
     }
 }

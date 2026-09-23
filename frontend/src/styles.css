@@ -429,3 +429,37 @@ button.sidebar-footer:hover { background: #18355a; }
 .confidence-flag { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; color: #ae781b; border-radius: 10px; background: #fff4dc; font-size: 10px; font-weight: 700; }
 .locate-button { display: grid; place-items: center; width: 20px; height: 20px; margin-left: auto; padding: 0; color: #8b9aae; border: 0; border-radius: 5px; background: transparent; }
 .locate-button:hover, .review-field-row.active .locate-button { color: #1689e6; background: #e3f1fd; }
+
+/* Customer "Mijn organisatie" page. */
+.org-loading { display: flex; align-items: center; gap: 8px; margin-top: 30px; }
+.org-hero { display: flex; align-items: center; gap: 18px; margin-top: 30px; padding: 22px 24px; border: 1px solid #e2e9f0; border-radius: 12px; background: linear-gradient(135deg, #ffffff 0%, #f1f8ff 100%); }
+.org-hero-avatar { display: grid; flex: 0 0 auto; place-items: center; width: 60px; height: 60px; color: #fff; border-radius: 14px; background: linear-gradient(135deg, #1689e6, #0c5fa8); box-shadow: 0 8px 18px #1689e633; font: 800 21px 'Manrope', sans-serif; }
+.org-hero-copy { flex: 1; min-width: 0; }
+.org-hero-copy h2 { font-size: 21px; }
+.org-hero-copy p { margin: 4px 0 0; color: #77889f; font-size: 13px; }
+.org-callout { justify-content: space-between; margin-top: 18px; }
+.org-grid { display: grid; grid-template-columns: 1.4fr 1fr; align-items: start; gap: 18px; margin-top: 20px; }
+.org-card { padding: 22px; border: 1px solid #e2e9f0; border-radius: 10px; background: #fff; }
+.org-card h3 { display: flex; align-items: center; gap: 8px; margin: 0; color: #152f55; font: 700 15px 'Manrope', sans-serif; }
+.org-card h3 svg { color: #1689e6; }
+.org-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; margin-top: 18px; }
+.org-fields.single { grid-template-columns: 1fr; }
+.org-field.wide { grid-column: 1 / -1; }
+.org-field > span { display: block; color: #8193a7; font-size: 11px; font-weight: 600; }
+.org-field > strong { display: block; margin-top: 4px; color: #243f60; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.org-field > strong.empty { color: #b3bfcc; font-weight: 500; font-style: italic; }
+.org-field > small { display: block; margin-top: 4px; color: #8b9aae; font-size: 11px; }
+.org-field label { display: grid; gap: 6px; color: #405b79; font-size: 12px; font-weight: 700; }
+.org-field input { width: 100%; padding: 10px 12px; color: #2c4564; border: 1px solid #dce5ee; border-radius: 7px; outline: 0; background: #fff; font-size: 13px; }
+.org-field input:focus { border-color: #68b3e9; box-shadow: 0 0 0 3px #1689e614; }
+.org-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.org-account { margin-top: 22px; }
+@media (max-width: 900px) { .org-grid { grid-template-columns: 1fr; } .org-fields { grid-template-columns: 1fr; } }
+
+/* Organisation details in the admin drawer. */
+.org-detail-list { display: grid; gap: 0; margin: 12px 0 10px; border: 1px solid #e2e9f0; border-radius: 9px; background: #fff; }
+.org-detail-list > div { display: flex; justify-content: space-between; gap: 14px; padding: 10px 14px; border-top: 1px solid #eef2f5; }
+.org-detail-list > div:first-child { border-top: 0; }
+.org-detail-list dt { color: #8193a7; font-size: 12px; }
+.org-detail-list dd { margin: 0; color: #243f60; font-size: 12px; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.org-detail-list dd.empty { color: #b3bfcc; font-weight: 500; font-style: italic; }
