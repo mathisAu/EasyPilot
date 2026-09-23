@@ -30,7 +30,7 @@ public class ExtractedField {
     @Column(nullable = false)
     private String fieldName;
 
-    @Column(name = "field_value", columnDefinition = "CLOB")
+    @Column(name = "field_value", columnDefinition = "TEXT")
     private String value;
 
     @Column(nullable = false)

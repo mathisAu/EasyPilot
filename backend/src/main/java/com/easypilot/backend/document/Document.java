@@ -56,7 +56,7 @@ public class Document {
     @Enumerated(EnumType.STRING)
     private ExtractionStatus extractionStatus = ExtractionStatus.PENDING;
 
-    @Column(columnDefinition = "CLOB")
+    @Column(columnDefinition = "TEXT")
     private String extractionError;
 
     @PrePersist
