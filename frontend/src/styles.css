@@ -172,9 +172,25 @@ button { cursor: pointer; }
 .folder-chip-new { color: #1689e6; border-style: dashed; }
 .folder-new-form { display: inline-flex; align-items: center; gap: 6px; }
 .folder-new-form input { width: 180px; padding: 7px 11px; color: #2c4564; border: 1px solid #68b3e9; border-radius: 20px; outline: 0; font-size: 12px; box-shadow: 0 0 0 3px #1689e614; }
-.folder-delete { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; padding: 6px 10px; color: #c4553a; border: 0; border-radius: 6px; background: transparent; font-size: 11px; font-weight: 700; }
+.folder-bar-actions { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
+.folder-add-button { padding: 8px 13px; font-size: 12px; box-shadow: none; }
+.folder-delete { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; color: #c4553a; border: 0; border-radius: 6px; background: transparent; font-size: 11px; font-weight: 700; }
 .folder-delete:hover { background: #fdeeea; }
-.folder-select { max-width: 150px; padding: 6px 8px; color: #48617c; border: 1px solid #dce5ee; border-radius: 6px; background: #fff; font-size: 12px; }
+.folder-tag { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; color: #2f6ea3; border-radius: 20px; background: #eaf4fd; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.folder-picker-modal { width: min(560px, 100%); display: flex; flex-direction: column; }
+.folder-picker-search { width: 100%; margin-top: 4px; }
+.modal .folder-picker-search input, .modal .folder-picker-search input:focus { padding: 0; border: 0; box-shadow: none; }
+.folder-picker-list { flex: 1; min-height: 120px; max-height: 340px; margin: 14px 0 0; padding: 0; overflow-y: auto; list-style: none; border: 1px solid #e2e9f0; border-radius: 9px; }
+.folder-picker-list li + li { border-top: 1px solid #eef2f5; }
+.folder-picker-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 14px; border: 0; background: #fff; text-align: left; }
+.folder-picker-item:hover { background: #f5fbff; }
+.folder-picker-item.selected { background: #eef7ff; }
+.folder-picker-check { display: grid; flex: 0 0 auto; place-items: center; width: 18px; height: 18px; color: #fff; border: 1.5px solid #c3d1de; border-radius: 5px; background: #fff; }
+.folder-picker-item.selected .folder-picker-check { border-color: #1689e6; background: #1689e6; }
+.folder-picker-copy { display: grid; gap: 2px; min-width: 0; }
+.folder-picker-copy strong { color: #2c4564; font-size: 13px; }
+.folder-picker-copy small { overflow: hidden; color: #8b9aae; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.folder-picker-empty { padding: 22px 14px; color: #8b9aae; font-size: 12px; text-align: center; }
 .row-actions { display: flex; justify-content: flex-end; gap: 2px; }
 .row-actions .row-action { margin-left: 0; }
 .row-action-danger:hover { color: #d5573b; background: #fdeeea; }

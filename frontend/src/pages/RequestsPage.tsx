@@ -4,6 +4,8 @@ import {
   FileCheck2,
   FileText,
   Folder as FolderIcon,
+  FolderInput,
+  FolderMinus,
   FolderPlus,
   Search,
   Sparkles,
@@ -17,6 +19,7 @@ import { stages, toneFor } from '../data';
 import { ApiError } from '../api/client';
 import { createFolder, deleteFolder, listFolders } from '../api/folders';
 import { moveDocumentTypeToFolder } from '../api/documentTypes';
+import { AddToFolderModal } from '../modals/AddToFolderModal';
 import type { DocumentType, Folder, RequestStatus } from '../types';
 
 interface RequestsPageProps {
@@ -52,6 +55,7 @@ export function RequestsPage({
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [folderError, setFolderError] = useState('');
+  const [showPicker, setShowPicker] = useState(false);
 
   useEffect(() => {
     listFolders()
@@ -91,6 +95,7 @@ export function RequestsPage({
       setNewFolderName('');
       setCreatingFolder(false);
       setFolderFilter(folder.id);
+      setShowPicker(true);
     } catch (err) {
       setFolderError(err instanceof ApiError ? err.message : 'Map aanmaken is niet gelukt.');
     }
@@ -111,13 +116,12 @@ export function RequestsPage({
     }
   }
 
-  async function handleMove(type: DocumentType, value: string) {
+  async function handleRemoveFromFolder(type: DocumentType) {
     setFolderError('');
     try {
-      const updated = await moveDocumentTypeToFolder(type.id, value ? Number(value) : null);
-      onTypeUpdated(updated);
+      onTypeUpdated(await moveDocumentTypeToFolder(type.id, null));
     } catch (err) {
-      setFolderError(err instanceof ApiError ? err.message : 'Verplaatsen is niet gelukt.');
+      setFolderError(err instanceof ApiError ? err.message : 'Uit de map halen is niet gelukt.');
     }
   }
 
@@ -237,14 +241,19 @@ export function RequestsPage({
             </button>
           )}
           {activeFolder && (
-            <button
-              type="button"
-              className="folder-delete"
-              onClick={() => handleDeleteFolder(activeFolder)}
-              title={`Map "${activeFolder.name}" verwijderen`}
-            >
-              <Trash2 size={13} /> Map verwijderen
-            </button>
+            <div className="folder-bar-actions">
+              <button type="button" className="primary-button folder-add-button" onClick={() => setShowPicker(true)}>
+                <FolderInput size={15} /> Aanvragen toevoegen
+              </button>
+              <button
+                type="button"
+                className="folder-delete"
+                onClick={() => handleDeleteFolder(activeFolder)}
+                title={`Map "${activeFolder.name}" verwijderen`}
+              >
+                <Trash2 size={13} /> Map verwijderen
+              </button>
+            </div>
           )}
         </div>
         {folderError && <p className="form-error">{folderError}</p>}
@@ -302,19 +311,13 @@ export function RequestsPage({
                     <StatusPill tone={toneFor(type.status)}>{type.status}</StatusPill>
                   </td>
                   <td>
-                    <select
-                      className="folder-select"
-                      value={type.folderId ?? ''}
-                      onChange={(event) => handleMove(type, event.target.value)}
-                      aria-label={`Map voor ${type.name}`}
-                    >
-                      <option value="">Geen map</option>
-                      {folders.map((folder) => (
-                        <option key={folder.id} value={folder.id}>
-                          {folder.name}
-                        </option>
-                      ))}
-                    </select>
+                    {type.folderName ? (
+                      <span className="folder-tag">
+                        <FolderIcon size={12} /> {type.folderName}
+                      </span>
+                    ) : (
+                      <span className="document-cell-empty">—</span>
+                    )}
                   </td>
                   <td>
                     <div className="row-actions">
@@ -326,6 +329,16 @@ export function RequestsPage({
                       >
                         <Eye size={16} />
                       </button>
+                      {activeFolder && (
+                        <button
+                          className="row-action"
+                          onClick={() => handleRemoveFromFolder(type)}
+                          aria-label={`Haal ${type.name} uit de map`}
+                          title="Uit deze map halen"
+                        >
+                          <FolderMinus size={16} />
+                        </button>
+                      )}
                       <button
                         className="row-action row-action-danger"
                         onClick={() => onDeleteType(type.id)}
@@ -348,12 +361,26 @@ export function RequestsPage({
               <span>
                 {folderFilter === 'all'
                   ? 'Probeer een andere zoekopdracht of filter.'
-                  : 'Deze map is leeg. Verplaats aanvragen hierheen via de kolom "Map".'}
+                  : folderFilter === 'none'
+                    ? 'Alle aanvragen zitten in een map.'
+                    : 'Deze map is leeg. Klik op "Aanvragen toevoegen" om er iets in te zetten.'}
               </span>
             </div>
           )}
         </div>
       </section>
+
+      {showPicker && activeFolder && (
+        <AddToFolderModal
+          folder={activeFolder}
+          types={types}
+          onClose={() => setShowPicker(false)}
+          onAdded={(updated) => {
+            updated.forEach(onTypeUpdated);
+            setShowPicker(false);
+          }}
+        />
+      )}
     </>
   );
 }
