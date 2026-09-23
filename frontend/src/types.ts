@@ -122,6 +122,16 @@ export interface TicketSummary {
   updatedAt: string;
 }
 
+/** An unsent reply (ticketId set) or an unsubmitted new ticket (ticketId null). Private to its author. */
+export interface TicketDraft {
+  id: number;
+  ticketId: number | null;
+  ticketSubject: string | null;
+  subject: string | null;
+  body: string | null;
+  updatedAt: string;
+}
+
 export interface TicketDetail {
   id: number;
   subject: string;

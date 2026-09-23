@@ -1,13 +1,21 @@
 import { useState } from 'react';
-import { CheckCircle2, ChevronDown, ChevronRight, MessageSquare, Plus, Ticket } from 'lucide-react';
-import type { TicketSummary } from '../types';
+import { CheckCircle2, ChevronDown, ChevronRight, FileClock, MessageSquare, Plus, Ticket } from 'lucide-react';
+import type { TicketDraft, TicketSummary } from '../types';
 
 interface TicketListProps {
   tickets: TicketSummary[];
+  drafts?: TicketDraft[];
   loading: boolean;
   showOrganization?: boolean;
   onOpen: (ticket: TicketSummary) => void;
+  onOpenDraft?: (draft: TicketDraft) => void;
   onCreate: () => void;
+}
+
+function draftPreview(draft: TicketDraft): string {
+  const text = (draft.body ?? '').replace(/\s+/g, ' ').trim();
+  if (!text) return 'Nog geen bericht';
+  return text.length > 80 ? `${text.slice(0, 77)}...` : text;
 }
 
 function timeAgo(iso: string): string {
@@ -21,10 +29,19 @@ function timeAgo(iso: string): string {
   return `${days} dag${days === 1 ? '' : 'en'} geleden`;
 }
 
-export function TicketList({ tickets, loading, showOrganization, onOpen, onCreate }: TicketListProps) {
+export function TicketList({
+  tickets,
+  drafts = [],
+  loading,
+  showOrganization,
+  onOpen,
+  onOpenDraft,
+  onCreate,
+}: TicketListProps) {
   const [showClosed, setShowClosed] = useState(false);
   const openTickets = tickets.filter((ticket) => ticket.status !== 'CLOSED');
   const closedTickets = tickets.filter((ticket) => ticket.status === 'CLOSED');
+  const ticketIdsWithDraft = new Set(drafts.map((draft) => draft.ticketId).filter((id): id is number => id != null));
 
   function renderRows(list: TicketSummary[]) {
     return (
@@ -41,6 +58,12 @@ export function TicketList({ tickets, loading, showOrganization, onOpen, onCreat
                 {ticket.messageCount} bericht{ticket.messageCount === 1 ? '' : 'en'} · {timeAgo(ticket.updatedAt)}
               </small>
             </div>
+            {ticketIdsWithDraft.has(ticket.id) && (
+              <span className="status-pill status-amber" title="Je hebt hier een onverstuurde reactie">
+                <span className="status-dot" />
+                Concept
+              </span>
+            )}
             <span className={`status-pill ${ticket.status === 'OPEN' ? 'status-blue' : 'status-slate'}`}>
               <span className="status-dot" />
               {ticket.status === 'OPEN' ? 'Open' : 'Gesloten'}
@@ -50,6 +73,39 @@ export function TicketList({ tickets, loading, showOrganization, onOpen, onCreat
       </div>
     );
   }
+
+  const draftsSection = !loading && drafts.length > 0 && (
+    <div className="ticket-drafts">
+      <div className="ticket-drafts-heading">
+        <FileClock size={16} />
+        <h3>Concepten</h3>
+        <span className="ticket-closed-count">{drafts.length}</span>
+      </div>
+      <div className="ticket-list">
+        {drafts.map((draft) => (
+          <button className="ticket-row" key={draft.id} onClick={() => onOpenDraft?.(draft)} type="button">
+            <span className="ticket-row-icon draft">
+              <FileClock size={18} />
+            </span>
+            <div>
+              <strong>
+                {draft.ticketId != null
+                  ? `Reactie op: ${draft.ticketSubject ?? `ticket #${draft.ticketId}`}`
+                  : draft.subject?.trim() || 'Nieuw ticket (zonder onderwerp)'}
+              </strong>
+              <small>
+                {draftPreview(draft)} · {timeAgo(draft.updatedAt)}
+              </small>
+            </div>
+            <span className="status-pill status-amber">
+              <span className="status-dot" />
+              Concept
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <section className="table-section">
@@ -64,6 +120,8 @@ export function TicketList({ tickets, loading, showOrganization, onOpen, onCreat
       </div>
 
       {loading && <p className="hint-text" style={{ marginTop: 20 }}>Tickets laden...</p>}
+
+      {draftsSection}
 
       {!loading && openTickets.length === 0 && (
         <div className="empty-state" style={{ marginTop: 20 }}>

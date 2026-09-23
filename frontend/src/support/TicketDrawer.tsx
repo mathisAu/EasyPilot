@@ -1,24 +1,90 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Check, CheckCircle2, Pencil, RotateCcw, Send, Trash2, X } from 'lucide-react';
 import { Drawer } from '../components/Drawer';
-import { addMessage, deleteMessage, editMessage, updateTicketStatus } from '../api/support';
+import { addMessage, deleteMessage, editMessage, getReplyDraft, saveReplyDraft, updateTicketStatus } from '../api/support';
 import { ApiError } from '../api/client';
 import type { TicketDetail, TicketMessage } from '../types';
 
 const MESSAGE_COOLDOWN_SECONDS = 5;
+const DRAFT_SAVE_DELAY_MS = 700;
 
 interface TicketDrawerProps {
   ticket: TicketDetail;
   onClose: () => void;
   onChanged: (ticket: TicketDetail) => void;
+  onDraftChanged?: () => void;
 }
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
-export function TicketDrawer({ ticket, onClose, onChanged }: TicketDrawerProps) {
+export function TicketDrawer({ ticket, onClose, onChanged, onDraftChanged }: TicketDrawerProps) {
   const [reply, setReply] = useState('');
+  const [draftStatus, setDraftStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  // Unsent text is autosaved as a server-side draft, so logging out mid-chat never loses it.
+  const draftLoadedRef = useRef(false);
+  const draftDirtyRef = useRef(false);
+  const replyRef = useRef(reply);
+  const ticketIdRef = useRef(ticket.id);
+  const onDraftChangedRef = useRef(onDraftChanged);
+  replyRef.current = reply;
+  ticketIdRef.current = ticket.id;
+  onDraftChangedRef.current = onDraftChanged;
+
+  useEffect(() => {
+    let cancelled = false;
+    draftLoadedRef.current = false;
+    draftDirtyRef.current = false;
+    getReplyDraft(ticket.id)
+      .then((draft) => {
+        if (cancelled || !draft?.body) return;
+        setReply(draft.body);
+        setDraftStatus('saved');
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) draftLoadedRef.current = true;
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticket.id]);
+
+  useEffect(() => {
+    if (!draftDirtyRef.current) return;
+    const timer = window.setTimeout(() => {
+      const body = reply;
+      saveReplyDraft(ticket.id, body)
+        .then(() => {
+          if (replyRef.current !== body) return;
+          draftDirtyRef.current = false;
+          setDraftStatus(body.trim() ? 'saved' : 'idle');
+          onDraftChangedRef.current?.();
+        })
+        .catch(() => setDraftStatus('idle'));
+    }, DRAFT_SAVE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [reply, ticket.id]);
+
+  useEffect(
+    () => () => {
+      if (draftDirtyRef.current) {
+        saveReplyDraft(ticketIdRef.current, replyRef.current)
+          .then(() => onDraftChangedRef.current?.())
+          .catch(() => {});
+      }
+    },
+    []
+  );
+
+  function handleReplyChange(value: string) {
+    setReply(value);
+    if (draftLoadedRef.current) {
+      draftDirtyRef.current = true;
+      setDraftStatus('saving');
+    }
+  }
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [cooldown, setCooldown] = useState(0);
@@ -45,7 +111,11 @@ export function TicketDrawer({ ticket, onClose, onChanged }: TicketDrawerProps) 
     try {
       const message = await addMessage(ticket.id, reply.trim());
       onChanged({ ...ticket, messages: [...ticket.messages, message], updatedAt: message.createdAt });
+      // The backend drops the reply draft once the message is sent.
+      draftDirtyRef.current = false;
       setReply('');
+      setDraftStatus('idle');
+      onDraftChanged?.();
       setCooldown(MESSAGE_COOLDOWN_SECONDS);
     } catch (err) {
       if (err instanceof ApiError && err.status === 429) {
@@ -190,7 +260,7 @@ export function TicketDrawer({ ticket, onClose, onChanged }: TicketDrawerProps) 
         <form className="ticket-reply-form" onSubmit={handleSendReply}>
           <textarea
             value={reply}
-            onChange={(event) => setReply(event.target.value)}
+            onChange={(event) => handleReplyChange(event.target.value)}
             placeholder="Typ een reactie..."
             maxLength={5000}
             rows={2}
@@ -199,7 +269,13 @@ export function TicketDrawer({ ticket, onClose, onChanged }: TicketDrawerProps) 
             <Send size={16} /> {cooldown > 0 ? `${cooldown}s` : sending ? '...' : ''}
           </button>
         </form>
-      ) : (
+      ) : null}
+      {ticket.status === 'OPEN' && draftStatus !== 'idle' ? (
+        <p className="ticket-draft-status">
+          {draftStatus === 'saving' ? 'Concept opslaan...' : 'Concept opgeslagen. Je vindt dit terug onder "Concepten".'}
+        </p>
+      ) : null}
+      {ticket.status !== 'OPEN' && (
         <p className="hint-text" style={{ marginTop: 18 }}>
           Dit ticket is gesloten. Heropen het ticket om te reageren.
         </p>

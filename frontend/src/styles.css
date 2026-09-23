@@ -179,6 +179,13 @@ button { cursor: pointer; }
 .customer-cell-link:hover strong { color: #1687e5; text-decoration: underline; }
 .type-card-title { padding: 0; color: inherit; border: 0; background: transparent; text-align: left; font: inherit; letter-spacing: inherit; }
 .type-card-title:hover { color: #1687e5; text-decoration: underline; }
+.ticket-drafts { margin-top: 18px; padding: 14px; border: 1px dashed #efcf8e; border-radius: 10px; background: #fffbf1; }
+.ticket-drafts-heading { display: flex; align-items: center; gap: 8px; color: #ae781b; }
+.ticket-drafts-heading h3 { margin: 0; color: #7a5410; font: 700 15px 'Manrope', sans-serif; }
+.ticket-drafts .ticket-list { margin-top: 10px; }
+.ticket-row-icon.draft { color: #ae781b; background: #fff4dc; }
+.ticket-draft-status { margin: 8px 0 0; color: #8b9aae; font-size: 11px; }
+.draft-discard { margin-right: auto; color: #c4553a; }
 .ticket-closed-heading { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 30px; padding: 6px 0; color: #6d8198; border: 0; border-bottom: 1px solid #e2e9f0; background: transparent; text-align: left; }
 .ticket-closed-heading h3 { margin: 0; color: #152f55; font: 700 16px 'Manrope', sans-serif; letter-spacing: -.4px; }
 .ticket-closed-heading:hover h3 { color: #1687e5; }

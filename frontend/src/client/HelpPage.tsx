@@ -3,9 +3,9 @@ import { Mail, MessageCircleQuestion, Phone } from 'lucide-react';
 import { TicketList } from '../support/TicketList';
 import { NewTicketModal } from '../support/NewTicketModal';
 import { TicketDrawer } from '../support/TicketDrawer';
-import { listTickets, getTicket } from '../api/support';
+import { listTickets, getTicket, listDrafts } from '../api/support';
 import { ApiError } from '../api/client';
-import type { TicketDetail, TicketSummary } from '../types';
+import type { TicketDetail, TicketDraft, TicketSummary } from '../types';
 
 const FAQ = [
   {
@@ -39,6 +39,8 @@ export function HelpPage({ focusTicketId, onFocusHandled }: HelpPageProps) {
   const [showNewTicket, setShowNewTicket] = useState(false);
   const [openTicket, setOpenTicket] = useState<TicketDetail | null>(null);
   const [error, setError] = useState('');
+  const [drafts, setDrafts] = useState<TicketDraft[]>([]);
+  const [newTicketDraft, setNewTicketDraft] = useState<TicketDraft | null>(null);
 
   function refresh() {
     setLoading(true);
@@ -48,7 +50,26 @@ export function HelpPage({ focusTicketId, onFocusHandled }: HelpPageProps) {
       .finally(() => setLoading(false));
   }
 
+  function refreshDrafts() {
+    listDrafts().then(setDrafts).catch(() => {});
+  }
+
   useEffect(refresh, []);
+  useEffect(refreshDrafts, []);
+
+  function openDraft(draft: TicketDraft) {
+    if (draft.ticketId != null) {
+      openTicketById(draft.ticketId);
+    } else {
+      setNewTicketDraft(draft);
+      setShowNewTicket(true);
+    }
+  }
+
+  function closeNewTicket() {
+    setShowNewTicket(false);
+    setNewTicketDraft(null);
+  }
 
   async function openTicketById(ticketId: number) {
     try {
@@ -67,7 +88,7 @@ export function HelpPage({ focusTicketId, onFocusHandled }: HelpPageProps) {
   }, [focusTicketId]);
 
   function handleCreated(ticket: TicketDetail) {
-    setShowNewTicket(false);
+    closeNewTicket();
     refresh();
     setOpenTicket(ticket);
   }
@@ -97,14 +118,28 @@ export function HelpPage({ focusTicketId, onFocusHandled }: HelpPageProps) {
 
       <TicketList
         tickets={tickets}
+        drafts={drafts}
         loading={loading}
         onOpen={(ticket) => openTicketById(ticket.id)}
+        onOpenDraft={openDraft}
         onCreate={() => setShowNewTicket(true)}
       />
 
-      {showNewTicket && <NewTicketModal onClose={() => setShowNewTicket(false)} onCreated={handleCreated} />}
+      {showNewTicket && (
+        <NewTicketModal
+          draft={newTicketDraft}
+          onClose={closeNewTicket}
+          onCreated={handleCreated}
+          onDraftChanged={refreshDrafts}
+        />
+      )}
       {openTicket && (
-        <TicketDrawer ticket={openTicket} onClose={() => setOpenTicket(null)} onChanged={handleChanged} />
+        <TicketDrawer
+          ticket={openTicket}
+          onClose={() => setOpenTicket(null)}
+          onChanged={handleChanged}
+          onDraftChanged={refreshDrafts}
+        />
       )}
 
       <section className="table-section">
