@@ -313,22 +313,18 @@ export function RequestsPage({
               {filteredTypes.map((type) => (
                 <tr key={type.id}>
                   <td>
-                    <div className="customer-cell">
-                      <span className="customer-logo">{type.provider.slice(0, 1)}</span>
-                      <strong>{type.organizationName ?? '—'}</strong>
-                    </div>
-                  </td>
-                  <td>{type.provider}</td>
-                  <td>
                     <button
                       type="button"
-                      className="name-link"
+                      className="customer-cell customer-cell-link"
                       onClick={() => onViewType(type)}
-                      title={`${type.name} bekijken`}
+                      title={`${type.name} van ${type.organizationName ?? 'intern'} bekijken`}
                     >
-                      {type.name}
+                      <span className="customer-logo">{type.provider.slice(0, 1)}</span>
+                      <strong>{type.organizationName ?? '—'}</strong>
                     </button>
                   </td>
+                  <td>{type.provider}</td>
+                  <td>{type.name}</td>
                   <td>{formatDate(type.createdAt)}</td>
                   <td>
                     <StatusPill tone={toneFor(type.status)}>{type.status}</StatusPill>
