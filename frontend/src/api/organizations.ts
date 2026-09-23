@@ -1,5 +1,5 @@
 import { apiFetch } from './client';
-import type { Organization } from '../types';
+import type { Organization, OrganizationDetails } from '../types';
 
 export interface CreateOrganizationInput {
   name: string;
@@ -21,4 +21,8 @@ export async function getMyOrganization(): Promise<Organization> {
 
 export async function deleteUserAccount(username: string): Promise<void> {
   await apiFetch<void>(`/api/account/admin/users/${encodeURIComponent(username)}`, { method: 'DELETE' });
+}
+
+export async function updateMyOrganization(details: OrganizationDetails): Promise<Organization> {
+  return apiFetch<Organization>('/api/organizations/me', { method: 'PATCH', json: details });
 }

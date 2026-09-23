@@ -87,7 +87,21 @@ export interface Organization {
   customerUsername: string | null;
   documentTypeCount: number;
   createdAt: string;
+  address: string | null;
+  postalCode: string | null;
+  city: string | null;
+  kvkNumber: string | null;
+  vatNumber: string | null;
+  website: string | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
 }
+
+export type OrganizationDetails = Pick<
+  Organization,
+  'address' | 'postalCode' | 'city' | 'kvkNumber' | 'vatNumber' | 'website' | 'contactName' | 'contactEmail' | 'contactPhone'
+>;
 
 export interface WizardFormData {
   customer: string;
