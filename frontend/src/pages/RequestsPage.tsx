@@ -7,6 +7,7 @@ import {
   FolderInput,
   FolderMinus,
   FolderPlus,
+  FolderSymlink,
   Search,
   Sparkles,
   SlidersHorizontal,
@@ -58,6 +59,7 @@ export function RequestsPage({
   const [folderError, setFolderError] = useState('');
   const [showPicker, setShowPicker] = useState(false);
   const [showFolders, setShowFolders] = useState(false);
+  const [movingType, setMovingType] = useState<DocumentType | null>(null);
 
   useEffect(() => {
     listFolders()
@@ -115,6 +117,16 @@ export function RequestsPage({
       setFolderFilter('all');
     } catch (err) {
       setFolderError(err instanceof ApiError ? err.message : 'Map verwijderen is niet gelukt.');
+    }
+  }
+
+  async function handleMoveToFolder(type: DocumentType, target: Folder) {
+    setFolderError('');
+    setMovingType(null);
+    try {
+      onTypeUpdated(await moveDocumentTypeToFolder(type.id, target.id));
+    } catch (err) {
+      setFolderError(err instanceof ApiError ? err.message : 'Verplaatsen is niet gelukt.');
     }
   }
 
@@ -334,6 +346,16 @@ export function RequestsPage({
                       {activeFolder && (
                         <button
                           className="row-action"
+                          onClick={() => setMovingType(type)}
+                          aria-label={`Verplaats ${type.name} naar een andere map`}
+                          title="Verplaatsen naar andere map"
+                        >
+                          <FolderSymlink size={16} />
+                        </button>
+                      )}
+                      {activeFolder && (
+                        <button
+                          className="row-action"
                           onClick={() => handleRemoveFromFolder(type)}
                           aria-label={`Haal ${type.name} uit de map`}
                           title="Uit deze map halen"
@@ -382,6 +404,21 @@ export function RequestsPage({
             setShowFolders(false);
           }}
           onClose={() => setShowFolders(false)}
+        />
+      )}
+
+      {movingType && (
+        <FoldersModal
+          folders={folders}
+          types={types}
+          activeFolderId={null}
+          excludeFolderId={movingType.folderId ?? undefined}
+          title={`"${movingType.name}" verplaatsen`}
+          description={`Kies de map waar deze aanvraag naartoe moet${
+            movingType.folderName ? ` (nu in "${movingType.folderName}")` : ''
+          }.`}
+          onSelect={(folder) => handleMoveToFolder(movingType, folder)}
+          onClose={() => setMovingType(null)}
         />
       )}
 

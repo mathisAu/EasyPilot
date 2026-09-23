@@ -8,17 +8,35 @@ interface FoldersModalProps {
   activeFolderId: number | null;
   onSelect: (folder: Folder) => void;
   onClose: () => void;
+  title?: string;
+  description?: string;
+  /** Hidden from the list, e.g. the folder an aanvraag is being moved out of. */
+  excludeFolderId?: number;
 }
 
-export function FoldersModal({ folders, types, activeFolderId, onSelect, onClose }: FoldersModalProps) {
+export function FoldersModal({
+  folders,
+  types,
+  activeFolderId,
+  onSelect,
+  onClose,
+  title = 'Alle mappen',
+  description = 'Op alfabetische volgorde. Klik op een map om hem te openen.',
+  excludeFolderId,
+}: FoldersModalProps) {
   const [query, setQuery] = useState('');
+
+  const selectableFolders = useMemo(
+    () => folders.filter((folder) => folder.id !== excludeFolderId),
+    [folders, excludeFolderId]
+  );
 
   const visibleFolders = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return [...folders]
+    return selectableFolders
       .filter((folder) => folder.name.toLowerCase().includes(needle))
       .sort((a, b) => a.name.localeCompare(b.name, 'nl', { sensitivity: 'base' }));
-  }, [folders, query]);
+  }, [selectableFolders, query]);
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -27,10 +45,10 @@ export function FoldersModal({ folders, types, activeFolderId, onSelect, onClose
           <X size={18} />
         </button>
         <p className="eyebrow">Mappen</p>
-        <h2>Alle mappen</h2>
-        <p className="modal-description">Op alfabetische volgorde. Klik op een map om hem te openen.</p>
+        <h2>{title}</h2>
+        <p className="modal-description">{description}</p>
 
-        {folders.length > 0 && (
+        {selectableFolders.length > 0 && (
           <div className="search-field folder-picker-search">
             <Search size={17} />
             <input
@@ -72,8 +90,10 @@ export function FoldersModal({ folders, types, activeFolderId, onSelect, onClose
           })}
           {visibleFolders.length === 0 && (
             <li className="folder-picker-empty">
-              {folders.length === 0
-                ? 'Nog geen mappen. Maak er een aan met "Nieuwe map".'
+              {selectableFolders.length === 0
+                ? excludeFolderId !== undefined
+                  ? 'Er is nog geen andere map. Maak er een aan met "Nieuwe map".'
+                  : 'Nog geen mappen. Maak er een aan met "Nieuwe map".'
                 : 'Geen map gevonden met deze naam.'}
             </li>
           )}

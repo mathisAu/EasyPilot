@@ -19,8 +19,9 @@ export function AddToFolderModal({ folder, types, onClose, onAdded }: AddToFolde
 
   const candidates = useMemo(() => {
     const needle = query.trim().toLowerCase();
+    // Only unfiled aanvragen: moving one between folders goes through "Verplaatsen" inside its folder.
     return types
-      .filter((type) => type.folderId !== folder.id)
+      .filter((type) => !type.folderId)
       .filter((type) =>
         `${type.name} ${type.provider} ${type.organizationName ?? ''}`.toLowerCase().includes(needle)
       );
@@ -55,7 +56,10 @@ export function AddToFolderModal({ folder, types, onClose, onAdded }: AddToFolde
         </button>
         <p className="eyebrow">Map</p>
         <h2>Toevoegen aan "{folder.name}"</h2>
-        <p className="modal-description">Zoek op naam, klant of opdrachtgever en vink aan wat je in deze map wilt zetten.</p>
+        <p className="modal-description">
+          Aanvragen die nog in geen map zitten. Zoek op naam, klant of opdrachtgever en vink aan wat je in deze map
+          wilt zetten.
+        </p>
 
         <div className="search-field folder-picker-search">
           <Search size={17} />
@@ -88,7 +92,6 @@ export function AddToFolderModal({ folder, types, onClose, onAdded }: AddToFolde
                     <strong>{type.name}</strong>
                     <small>
                       {type.organizationName ?? 'Intern'} · {type.provider}
-                      {type.folderName && ` · nu in "${type.folderName}"`}
                     </small>
                   </span>
                 </button>
@@ -97,7 +100,9 @@ export function AddToFolderModal({ folder, types, onClose, onAdded }: AddToFolde
           })}
           {candidates.length === 0 && (
             <li className="folder-picker-empty">
-              {query ? 'Geen aanvragen gevonden voor deze zoekopdracht.' : 'Alle aanvragen staan al in deze map.'}
+              {query
+                ? 'Geen aanvragen gevonden voor deze zoekopdracht.'
+                : 'Alle aanvragen zitten al in een map. Verplaats ze vanuit hun huidige map.'}
             </li>
           )}
         </ul>
