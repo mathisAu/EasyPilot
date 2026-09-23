@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Eye, FileCheck2, FileText, Search, Sparkles, SlidersHorizontal, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight, Eye, FileCheck2, FileText, Search, Sparkles, SlidersHorizontal, X } from 'lucide-react';
 import { Metric } from '../components/Metric';
 import { StatusPill } from '../components/StatusPill';
 import { stages, toneFor } from '../data';
@@ -14,9 +14,24 @@ interface RequestsPageProps {
   onViewType: (type: DocumentType) => void;
 }
 
+const NO_ORGANIZATION = 'Intern (geen klant)';
+
 function formatDate(value?: string): string {
   if (!value) return '—';
   return new Date(value).toLocaleDateString('nl-NL');
+}
+
+function groupByOrganization(types: DocumentType[]): [string, DocumentType[]][] {
+  const groups = new Map<string, DocumentType[]>();
+  for (const type of types) {
+    const key = type.organizationName ?? NO_ORGANIZATION;
+    groups.set(key, [...(groups.get(key) ?? []), type]);
+  }
+  return [...groups.entries()].sort(([a], [b]) => {
+    if (a === NO_ORGANIZATION) return 1;
+    if (b === NO_ORGANIZATION) return -1;
+    return a.localeCompare(b, 'nl');
+  });
 }
 
 export function RequestsPage({
@@ -36,6 +51,17 @@ export function RequestsPage({
         .filter((type) => !statusFilter || type.status === statusFilter),
     [types, search, statusFilter]
   );
+  const groups = useMemo(() => groupByOrganization(filteredTypes), [filteredTypes]);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  function toggleGroup(name: string) {
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  }
 
   const inBehandeling = types.filter((type) =>
     (['In beoordeling', 'Inleren', 'Testen', 'Correctie nodig'] as RequestStatus[]).includes(type.status)
@@ -130,42 +156,60 @@ export function RequestsPage({
           <table>
             <thead>
               <tr>
-                <th>Klant</th>
-                <th>Opdrachtgever</th>
                 <th>Documenttype</th>
+                <th>Opdrachtgever</th>
                 <th>Aangeleverd</th>
                 <th>Status</th>
                 <th aria-label="Acties" />
               </tr>
             </thead>
-            <tbody>
-              {filteredTypes.map((type) => (
-                <tr key={type.id}>
-                  <td>
-                    <div className="customer-cell">
-                      <span className="customer-logo">{type.provider.slice(0, 1)}</span>
-                      <strong>{type.organizationName ?? '—'}</strong>
-                    </div>
-                  </td>
-                  <td>{type.provider}</td>
-                  <td>{type.name}</td>
-                  <td>{formatDate(type.createdAt)}</td>
-                  <td>
-                    <StatusPill tone={toneFor(type.status)}>{type.status}</StatusPill>
-                  </td>
-                  <td>
-                    <button
-                      className="row-action"
-                      onClick={() => onViewType(type)}
-                      aria-label={`Bekijk ${type.name}`}
-                      title="Bekijken"
-                    >
-                      <Eye size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+            {groups.map(([organizationName, groupTypes]) => {
+              const isCollapsed = collapsed.has(organizationName);
+              return (
+                <tbody key={organizationName}>
+                  <tr className="group-row">
+                    <td colSpan={5}>
+                      <button
+                        type="button"
+                        className="group-toggle"
+                        onClick={() => toggleGroup(organizationName)}
+                        aria-expanded={!isCollapsed}
+                      >
+                        {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                        <span className="customer-logo">{organizationName.slice(0, 1).toUpperCase()}</span>
+                        <strong>{organizationName}</strong>
+                        <span className="group-count">
+                          {groupTypes.length} {groupTypes.length === 1 ? 'aanvraag' : 'aanvragen'}
+                        </span>
+                      </button>
+                    </td>
+                  </tr>
+                  {!isCollapsed &&
+                    groupTypes.map((type) => (
+                      <tr key={type.id}>
+                        <td>
+                          <strong className="type-name">{type.name}</strong>
+                        </td>
+                        <td>{type.provider}</td>
+                        <td>{formatDate(type.createdAt)}</td>
+                        <td>
+                          <StatusPill tone={toneFor(type.status)}>{type.status}</StatusPill>
+                        </td>
+                        <td>
+                          <button
+                            className="row-action"
+                            onClick={() => onViewType(type)}
+                            aria-label={`Bekijk ${type.name}`}
+                            title="Bekijken"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              );
+            })}
           </table>
 
           {filteredTypes.length === 0 && (
