@@ -319,7 +319,16 @@ export function RequestsPage({
                     </div>
                   </td>
                   <td>{type.provider}</td>
-                  <td>{type.name}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="name-link"
+                      onClick={() => onViewType(type)}
+                      title={`${type.name} bekijken`}
+                    >
+                      {type.name}
+                    </button>
+                  </td>
                   <td>{formatDate(type.createdAt)}</td>
                   <td>
                     <StatusPill tone={toneFor(type.status)}>{type.status}</StatusPill>

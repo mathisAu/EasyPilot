@@ -32,7 +32,11 @@ export function DocumentTypesPage({ types, onAdd, onView, onEdit, onDelete }: Do
               <span className="customer-logo">{item.provider[0]}</span>
               <StatusPill tone={toneFor(item.status)}>{item.status}</StatusPill>
             </div>
-            <h2>{item.name}</h2>
+            <h2>
+              <button type="button" className="type-card-title" onClick={() => onView(item)} title={`${item.name} openen`}>
+                {item.name}
+              </button>
+            </h2>
             <p>{item.provider}</p>
             <div className="type-stats">
               <span>

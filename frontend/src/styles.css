@@ -172,6 +172,10 @@ button { cursor: pointer; }
 .folder-chip-new { color: #1689e6; border-style: dashed; }
 .folder-new-form { display: inline-flex; align-items: center; gap: 6px; }
 .folder-new-form input { width: 180px; padding: 7px 11px; color: #2c4564; border: 1px solid #68b3e9; border-radius: 20px; outline: 0; font-size: 12px; box-shadow: 0 0 0 3px #1689e614; }
+.name-link { padding: 0; color: #1d4f7c; border: 0; background: transparent; text-align: left; font-size: 12px; font-weight: 600; }
+.name-link:hover { color: #1687e5; text-decoration: underline; }
+.type-card-title { padding: 0; color: inherit; border: 0; background: transparent; text-align: left; font: inherit; letter-spacing: inherit; }
+.type-card-title:hover { color: #1687e5; text-decoration: underline; }
 .folder-list-icon { flex: 0 0 auto; color: #8b9aae; }
 .folder-picker-item.selected .folder-list-icon, .folder-list-current { color: #1689e6; }
 .folder-list-current { flex: 0 0 auto; margin-left: auto; }
