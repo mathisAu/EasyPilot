@@ -89,14 +89,22 @@ final class SummaryPdfGenerator {
         return y - LINE_HEIGHT;
     }
 
-    // The built-in Helvetica fonts only support WinAnsiEncoding; replace anything
-    // outside it instead of letting PDFBox throw mid-render on an unusual character.
+    // The built-in Helvetica fonts only support WinAnsiEncoding printable characters;
+    // replace anything outside it (accents, emoji, ...) and flatten control characters
+    // such as embedded newlines in multi-line field values (e.g. a wrapped address) to
+    // spaces, since showText() throws on both instead of letting PDFBox crash mid-render.
     private static String sanitize(String text) {
         StringBuilder builder = new StringBuilder(text.length());
         for (char c : text.toCharArray()) {
-            builder.append(c < 256 ? c : '?');
+            if (c < 0x20) {
+                builder.append(' ');
+            } else if (c < 256) {
+                builder.append(c);
+            } else {
+                builder.append('?');
+            }
         }
-        return builder.toString();
+        return builder.toString().replaceAll(" {2,}", " ").trim();
     }
 
     private static List<String> wrap(String text, PDFont font, float size, float maxWidth) throws IOException {

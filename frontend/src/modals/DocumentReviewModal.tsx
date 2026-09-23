@@ -261,6 +261,8 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
                       {selectedDoc.extractionStatus === 'DONE' && (
                         <a
                           href={summaryUrl(selectedDoc.id)}
+                          target="_blank"
+                          rel="noreferrer"
                           className="secondary-button review-summary-link"
                           title="Downloadt een los PDF-bestand met alleen de opgeslagen, ingevulde velden"
                         >

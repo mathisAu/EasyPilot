@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface ExtractedFieldRepository extends JpaRepository<ExtractedField, Long> {
 
-    List<ExtractedField> findByDocumentId(Long documentId);
+    List<ExtractedField> findByDocumentIdOrderByIdAsc(Long documentId);
 
     void deleteByDocumentId(Long documentId);
 }

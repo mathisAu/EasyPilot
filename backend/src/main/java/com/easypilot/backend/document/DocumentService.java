@@ -79,7 +79,7 @@ public class DocumentService {
         documentTypeService.getVisibleOrThrow(document.getDocumentType().getId(), currentUser);
         // Only the fields the admin left filled in go into the summary — a field
         // cleared out in the review screen is simply absent, not redacted.
-        List<ExtractedField> filled = extractedFieldRepository.findByDocumentId(documentId).stream()
+        List<ExtractedField> filled = extractedFieldRepository.findByDocumentIdOrderByIdAsc(documentId).stream()
                 .filter(field -> field.getValue() != null && !field.getValue().isBlank())
                 .toList();
         byte[] pdf = SummaryPdfGenerator.generate(
@@ -97,13 +97,13 @@ public class DocumentService {
     @Transactional(readOnly = true)
     public List<ExtractedFieldDto> getExtractedFields(Long documentId) {
         getOrThrow(documentId);
-        return extractedFieldRepository.findByDocumentId(documentId).stream().map(ExtractedFieldDto::from).toList();
+        return extractedFieldRepository.findByDocumentIdOrderByIdAsc(documentId).stream().map(ExtractedFieldDto::from).toList();
     }
 
     @Transactional
     public List<ExtractedFieldDto> updateExtractedFields(Long documentId, List<ExtractedFieldUpdateRequest> updates) {
         getOrThrow(documentId);
-        List<ExtractedField> existing = extractedFieldRepository.findByDocumentId(documentId);
+        List<ExtractedField> existing = extractedFieldRepository.findByDocumentIdOrderByIdAsc(documentId);
         Map<String, ExtractedField> byName = new HashMap<>();
         for (ExtractedField field : existing) {
             byName.put(field.getFieldName(), field);
