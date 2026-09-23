@@ -73,6 +73,20 @@ public class DocumentController {
                 .body(payload.resource());
     }
 
+    @GetMapping("/api/documents/{id}/summary")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> downloadSummary(@PathVariable Long id, Authentication authentication) {
+        AppUser currentUser = currentUserService.require(authentication);
+        DocumentService.SummaryPdf summary = service.generateSummaryPdf(id, currentUser);
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(summary.filename(), StandardCharsets.UTF_8)
+                .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(summary.content());
+    }
+
     @GetMapping("/api/documents/{id}/extracted-fields")
     @PreAuthorize("hasRole('ADMIN')")
     public List<ExtractedFieldDto> getExtractedFields(@PathVariable Long id) {

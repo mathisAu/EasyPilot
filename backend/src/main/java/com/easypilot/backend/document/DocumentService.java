@@ -70,6 +70,23 @@ public class DocumentService {
         return new DownloadPayload(document, resource);
     }
 
+    public record SummaryPdf(String filename, byte[] content) {
+    }
+
+    @Transactional(readOnly = true)
+    public SummaryPdf generateSummaryPdf(Long documentId, AppUser currentUser) {
+        Document document = getOrThrow(documentId);
+        documentTypeService.getVisibleOrThrow(document.getDocumentType().getId(), currentUser);
+        // Only the fields the admin left filled in go into the summary — a field
+        // cleared out in the review screen is simply absent, not redacted.
+        List<ExtractedField> filled = extractedFieldRepository.findByDocumentId(documentId).stream()
+                .filter(field -> field.getValue() != null && !field.getValue().isBlank())
+                .toList();
+        byte[] pdf = SummaryPdfGenerator.generate(
+                document.getDocumentType().getName(), document.getOriginalFilename(), filled);
+        return new SummaryPdf(document.getDocumentType().getName() + " - samenvatting.pdf", pdf);
+    }
+
     @Transactional
     public void delete(Long id) {
         Document document = getOrThrow(id);

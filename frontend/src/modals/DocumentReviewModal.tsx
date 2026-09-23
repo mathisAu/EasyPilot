@@ -5,6 +5,7 @@ import {
   listDocuments,
   previewUrl,
   retryExtraction,
+  summaryUrl,
   updateDocumentTypeStatus,
   updateExtractedFields,
 } from '../api/documentTypes';
@@ -253,9 +254,23 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
                         </button>
                       </div>
                     ))}
-                    <button type="button" className="primary-button review-save-button" onClick={handleSaveFields} disabled={savingFields}>
-                      <Save size={16} /> {savingFields ? 'Bezig...' : 'Opslaan'}
-                    </button>
+                    <div className="review-save-row">
+                      <button type="button" className="primary-button review-save-button" onClick={handleSaveFields} disabled={savingFields}>
+                        <Save size={16} /> {savingFields ? 'Bezig...' : 'Opslaan'}
+                      </button>
+                      {selectedDoc.extractionStatus === 'DONE' && (
+                        <a
+                          href={summaryUrl(selectedDoc.id)}
+                          className="secondary-button review-summary-link"
+                          title="Downloadt een los PDF-bestand met alleen de opgeslagen, ingevulde velden"
+                        >
+                          <Download size={14} /> Samenvatting downloaden
+                        </a>
+                      )}
+                    </div>
+                    <p className="modal-description review-summary-hint">
+                      De samenvatting bevat de laatst opgeslagen waarden. Sla eerst op voordat je downloadt.
+                    </p>
                   </>
                 )}
 

@@ -164,6 +164,10 @@ export function previewUrl(id: number): string {
   return `/api/documents/${id}/download?disposition=inline`;
 }
 
+export function summaryUrl(id: number): string {
+  return `/api/documents/${id}/summary`;
+}
+
 export async function getExtractedFields(documentId: number): Promise<ExtractedField[]> {
   const result = await apiFetch<BackendExtractedFieldDto[]>(`/api/documents/${documentId}/extracted-fields`);
   return result.map(mapExtractedField);

@@ -170,7 +170,10 @@ button { cursor: pointer; }
 .review-fields label:first-child { margin-top: 0; }
 .review-field-row { display: flex; align-items: flex-end; gap: 8px; }
 .review-field-row label { flex: 1; }
-.review-save-button { margin-top: 16px; width: 100%; justify-content: center; }
+.review-save-row { display: flex; gap: 8px; margin-top: 16px; }
+.review-save-button { flex: 1; justify-content: center; }
+.review-summary-link { flex: 1; justify-content: center; text-decoration: none; }
+.review-summary-hint { margin-top: 8px; font-size: 11px; }
 .field-confirm-toggle { display: grid; flex: 0 0 auto; place-items: center; width: 30px; height: 30px; margin-bottom: 1px; color: #a0adba; border: 1px solid #dce5ee; border-radius: 7px; background: #fff; cursor: pointer; }
 .field-confirm-toggle:hover { border-color: #2da16c; color: #2da16c; }
 .field-confirm-toggle.confirmed { color: #fff; border-color: #2da16c; background: #2da16c; }
