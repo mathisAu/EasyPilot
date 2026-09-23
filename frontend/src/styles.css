@@ -186,6 +186,20 @@ button { cursor: pointer; }
 .ticket-row-icon.draft { color: #ae781b; background: #fff4dc; }
 .ticket-draft-status { margin: 8px 0 0; color: #8b9aae; font-size: 11px; }
 .draft-discard { margin-right: auto; color: #c4553a; }
+/* Custom tooltip replacing the browser's black `title` box. Anchored to the right by default. */
+.has-tooltip { position: relative; }
+.has-tooltip::after, .has-tooltip::before { position: absolute; z-index: 10; pointer-events: none; opacity: 0; transition: opacity .15s ease, transform .15s ease; }
+.has-tooltip::after { content: attr(data-tooltip); bottom: calc(100% + 10px); right: 0; width: max-content; max-width: 280px; padding: 9px 12px; color: #2c4564; border: 1px solid #e2e9f0; border-radius: 9px; background: #fff; box-shadow: 0 12px 28px #1028491f; font-size: 12px; font-weight: 500; line-height: 1.45; letter-spacing: 0; text-align: left; white-space: normal; transform: translateY(4px); }
+.has-tooltip::before { content: ''; bottom: calc(100% + 5px); right: 14px; width: 9px; height: 9px; border-right: 1px solid #e2e9f0; border-bottom: 1px solid #e2e9f0; background: #fff; transform: translateY(4px) rotate(45deg); }
+.has-tooltip:hover::after, .has-tooltip:hover::before { opacity: 1; }
+.has-tooltip:hover::after { transform: translateY(0); }
+.has-tooltip:hover::before { transform: translateY(0) rotate(45deg); }
+.has-tooltip.tooltip-start::after { right: auto; left: 0; }
+.has-tooltip.tooltip-start::before { right: auto; left: 14px; }
+.has-tooltip.tooltip-below::after { top: calc(100% + 10px); bottom: auto; transform: translateY(-4px); }
+.has-tooltip.tooltip-below::before { top: calc(100% + 5px); bottom: auto; border: 0; border-top: 1px solid #e2e9f0; border-left: 1px solid #e2e9f0; transform: translateY(-4px) rotate(45deg); }
+.has-tooltip.tooltip-below:hover::after { transform: translateY(0); }
+.has-tooltip.tooltip-below:hover::before { transform: translateY(0) rotate(45deg); }
 .ticket-closed-heading { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 30px; padding: 6px 0; color: #6d8198; border: 0; border-bottom: 1px solid #e2e9f0; background: transparent; text-align: left; }
 .ticket-closed-heading h3 { margin: 0; color: #152f55; font: 700 16px 'Manrope', sans-serif; letter-spacing: -.4px; }
 .ticket-closed-heading:hover h3 { color: #1687e5; }

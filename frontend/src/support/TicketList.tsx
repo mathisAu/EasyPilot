@@ -67,12 +67,12 @@ export function TicketList({
                 </small>
               </div>
               {ticketIdsWithDraft.has(ticket.id) && (
-                <span className="status-pill status-amber" title="Je hebt hier een onverstuurde reactie">
+                <span className="status-pill status-amber has-tooltip" data-tooltip="Je hebt hier een onverstuurde reactie">
                   <span className="status-dot" />
                   Concept
                 </span>
               )}
-              <span className={`status-pill status-${turn.tone}`} title={turn.description}>
+              <span className={`status-pill status-${turn.tone} has-tooltip`} data-tooltip={turn.description}>
                 <span className="status-dot" />
                 {turn.label}
               </span>

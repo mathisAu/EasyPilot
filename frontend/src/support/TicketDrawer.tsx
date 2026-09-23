@@ -192,7 +192,7 @@ export function TicketDrawer({ ticket, onClose, onChanged, onDraftChanged }: Tic
   return (
     <Drawer title={ticket.subject} eyebrow={`Ticket #${ticket.id}`} onClose={onClose}>
       <div className="ticket-drawer-meta">
-        <span className={`status-pill status-${turn.tone}`} title={turn.description}>
+        <span className={`status-pill status-${turn.tone} has-tooltip tooltip-start tooltip-below`} data-tooltip={turn.description}>
           <span className="status-dot" />
           {turn.label}
         </span>
