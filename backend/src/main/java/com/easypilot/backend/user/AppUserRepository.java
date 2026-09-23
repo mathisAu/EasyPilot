@@ -13,6 +13,8 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
     Optional<AppUser> findFirstByOrganizationId(Long organizationId);
 
+    List<AppUser> findAllByOrganizationId(Long organizationId);
+
     boolean existsByUsernameIgnoreCase(String username);
 
     Optional<AppUser> findFirstByEmailIgnoreCase(String email);

@@ -41,6 +41,9 @@ public class AppUser {
     @Column
     private String email;
 
+    @Column(name = "email_verified", nullable = false, columnDefinition = "boolean not null default true")
+    private boolean emailVerified = true;
+
     @Column(name = "totp_secret")
     private String totpSecret;
 
@@ -101,6 +104,14 @@ public class AppUser {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 
     public String getTotpSecret() {

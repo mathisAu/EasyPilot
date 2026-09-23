@@ -14,4 +14,8 @@ public interface TicketMessageRepository extends JpaRepository<TicketMessage, Lo
     long countByTicketId(Long ticketId);
 
     boolean existsByAuthorIdAndCreatedAtAfter(Long authorId, Instant after);
+
+    void deleteByAuthorId(Long authorId);
+
+    void deleteByTicketId(Long ticketId);
 }

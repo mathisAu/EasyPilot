@@ -18,3 +18,7 @@ export async function createOrganization(input: CreateOrganizationInput): Promis
 export async function getMyOrganization(): Promise<Organization> {
   return apiFetch<Organization>('/api/organizations/me');
 }
+
+export async function deleteUserAccount(username: string): Promise<void> {
+  await apiFetch<void>(`/api/account/admin/users/${encodeURIComponent(username)}`, { method: 'DELETE' });
+}
