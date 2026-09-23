@@ -172,18 +172,9 @@ button { cursor: pointer; }
 .folder-chip-new { color: #1689e6; border-style: dashed; }
 .folder-new-form { display: inline-flex; align-items: center; gap: 6px; }
 .folder-new-form input { width: 180px; padding: 7px 11px; color: #2c4564; border: 1px solid #68b3e9; border-radius: 20px; outline: 0; font-size: 12px; box-shadow: 0 0 0 3px #1689e614; }
-.folder-menu { position: relative; }
-.folder-menu-panel { position: absolute; top: calc(100% + 6px); left: 0; z-index: 4; width: 280px; padding: 8px; border: 1px solid #e2e9f0; border-radius: 10px; background: #fff; box-shadow: 0 14px 34px #10284926; }
-.folder-menu-panel ul { max-height: 320px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
-.folder-menu-heading { margin: 4px 8px 8px; color: #91a0b1; font-size: 10px; font-weight: 700; letter-spacing: .65px; text-transform: uppercase; }
-.folder-menu-empty { margin: 4px 8px 8px; color: #8b9aae; font-size: 12px; }
-.folder-menu-item { display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 10px; color: #324d6c; border: 0; border-radius: 7px; background: transparent; text-align: left; font-size: 13px; }
-.folder-menu-item svg { flex: 0 0 auto; color: #8b9aae; }
-.folder-menu-item:hover { background: #f1f6fb; }
-.folder-menu-item.active { color: #1689e6; background: #eef7ff; font-weight: 600; }
-.folder-menu-item.active svg { color: #1689e6; }
-.folder-menu-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.folder-menu-count { padding: 1px 7px; color: #6d8198; border-radius: 10px; background: #eef2f6; font-size: 10px; font-weight: 700; }
+.folder-list-icon { flex: 0 0 auto; color: #8b9aae; }
+.folder-picker-item.selected .folder-list-icon, .folder-list-current { color: #1689e6; }
+.folder-list-current { flex: 0 0 auto; margin-left: auto; }
 .folder-bar-actions { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
 .folder-add-button { padding: 8px 13px; font-size: 12px; box-shadow: none; }
 .folder-delete { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; color: #c4553a; border: 0; border-radius: 6px; background: transparent; font-size: 11px; font-weight: 700; }

@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
-  Check,
-  ChevronDown,
   Eye,
   FileCheck2,
   FileText,
@@ -22,6 +20,7 @@ import { ApiError } from '../api/client';
 import { createFolder, deleteFolder, listFolders } from '../api/folders';
 import { moveDocumentTypeToFolder } from '../api/documentTypes';
 import { AddToFolderModal } from '../modals/AddToFolderModal';
+import { FoldersModal } from '../modals/FoldersModal';
 import type { DocumentType, Folder, RequestStatus } from '../types';
 
 interface RequestsPageProps {
@@ -58,35 +57,13 @@ export function RequestsPage({
   const [newFolderName, setNewFolderName] = useState('');
   const [folderError, setFolderError] = useState('');
   const [showPicker, setShowPicker] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [showFolders, setShowFolders] = useState(false);
 
   useEffect(() => {
     listFolders()
       .then(setFolders)
       .catch((err) => setFolderError(err instanceof ApiError ? err.message : 'Kon mappen niet laden.'));
   }, []);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    function closeOnOutsideClick(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setMenuOpen(false);
-    }
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') setMenuOpen(false);
-    }
-    document.addEventListener('mousedown', closeOnOutsideClick);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('mousedown', closeOnOutsideClick);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [menuOpen]);
-
-  const sortedFolders = useMemo(
-    () => [...folders].sort((a, b) => a.name.localeCompare(b.name, 'nl', { sensitivity: 'base' })),
-    [folders]
-  );
 
   const filteredTypes = useMemo(
     () =>
@@ -226,52 +203,17 @@ export function RequestsPage({
           >
             Zonder map <span>{types.filter((type) => !type.folderId).length}</span>
           </button>
-          <div className="folder-menu" ref={menuRef}>
-            <button
-              type="button"
-              className={`folder-chip ${activeFolder ? 'active' : ''}`}
-              onClick={() => setMenuOpen((open) => !open)}
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-            >
-              <FolderIcon size={13} /> {activeFolder ? activeFolder.name : 'Mappen'}{' '}
-              <span>
-                {activeFolder ? types.filter((type) => type.folderId === activeFolder.id).length : folders.length}
-              </span>
-              <ChevronDown size={13} />
-            </button>
-            {menuOpen && (
-              <div className="folder-menu-panel" role="menu">
-                <p className="folder-menu-heading">Alle mappen (A-Z)</p>
-                {sortedFolders.length === 0 ? (
-                  <p className="folder-menu-empty">Nog geen mappen. Maak er een aan met "Nieuwe map".</p>
-                ) : (
-                  <ul>
-                    {sortedFolders.map((folder) => (
-                      <li key={folder.id}>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className={`folder-menu-item ${folderFilter === folder.id ? 'active' : ''}`}
-                          onClick={() => {
-                            setFolderFilter(folder.id);
-                            setMenuOpen(false);
-                          }}
-                        >
-                          <FolderIcon size={14} />
-                          <span className="folder-menu-name">{folder.name}</span>
-                          <span className="folder-menu-count">
-                            {types.filter((type) => type.folderId === folder.id).length}
-                          </span>
-                          {folderFilter === folder.id && <Check size={14} className="folder-menu-check" />}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-          </div>
+          <button
+            type="button"
+            className={`folder-chip ${activeFolder ? 'active' : ''}`}
+            onClick={() => setShowFolders(true)}
+            aria-haspopup="dialog"
+          >
+            <FolderIcon size={13} /> {activeFolder ? activeFolder.name : 'Mappen'}{' '}
+            <span>
+              {activeFolder ? types.filter((type) => type.folderId === activeFolder.id).length : folders.length}
+            </span>
+          </button>
           {creatingFolder ? (
             <form className="folder-new-form" onSubmit={handleCreateFolder}>
               <input
@@ -429,6 +371,19 @@ export function RequestsPage({
           )}
         </div>
       </section>
+
+      {showFolders && (
+        <FoldersModal
+          folders={folders}
+          types={types}
+          activeFolderId={activeFolder ? activeFolder.id : null}
+          onSelect={(folder) => {
+            setFolderFilter(folder.id);
+            setShowFolders(false);
+          }}
+          onClose={() => setShowFolders(false)}
+        />
+      )}
 
       {showPicker && activeFolder && (
         <AddToFolderModal
