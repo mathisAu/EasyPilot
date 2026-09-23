@@ -1,19 +1,21 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import {
   Building2,
   FileCheck2,
   FileText,
   Files,
+  ImagePlus,
   KeyRound,
   Loader2,
   Pencil,
   Search,
   Settings,
+  Trash2,
   UserRound,
 } from 'lucide-react';
 import { Metric } from '../components/Metric';
 import { ApiError } from '../api/client';
-import { updateMyOrganization } from '../api/organizations';
+import { deleteMyLogo, logoUrl, updateMyOrganization, uploadMyLogo } from '../api/organizations';
 import type { DocumentType, Organization, OrganizationDetails, RequestStatus } from '../types';
 
 interface MyOrganizationPageProps {
@@ -55,21 +57,16 @@ function detailsOf(organization: Organization): Record<keyof OrganizationDetails
   };
 }
 
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter((part) => /[a-z0-9]/i.test(part))
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-}
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
 export function MyOrganizationPage({ organization, loading, types, onUpdated, onOpenSettings }: MyOrganizationPageProps) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<Record<keyof OrganizationDetails, string> | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [logoBusy, setLogoBusy] = useState(false);
+  const [logoError, setLogoError] = useState('');
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   if (loading) {
     return (
@@ -83,6 +80,7 @@ export function MyOrganizationPage({ organization, loading, types, onUpdated, on
   }
 
   const current = organization;
+  const currentLogo = logoUrl(current);
   const values = form ?? detailsOf(current);
   const inProgress = types.filter((type) => IN_PROGRESS.includes(type.status)).length;
   const live = types.filter((type) => type.status === 'Live').length;
@@ -93,6 +91,42 @@ export function MyOrganizationPage({ organization, loading, types, onUpdated, on
     month: 'long',
     year: 'numeric',
   });
+
+  async function handleLogoSelected(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setLogoError('');
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      setLogoError('Kies een PNG-, JPG- of WebP-afbeelding.');
+      return;
+    }
+    if (file.size > MAX_LOGO_BYTES) {
+      setLogoError('Het logo mag maximaal 2 MB zijn.');
+      return;
+    }
+    setLogoBusy(true);
+    try {
+      onUpdated(await uploadMyLogo(file));
+    } catch (err) {
+      setLogoError(err instanceof ApiError ? err.message : 'Logo uploaden is niet gelukt.');
+    } finally {
+      setLogoBusy(false);
+    }
+  }
+
+  async function handleLogoRemove() {
+    if (!window.confirm('Het logo verwijderen?')) return;
+    setLogoBusy(true);
+    setLogoError('');
+    try {
+      onUpdated(await deleteMyLogo());
+    } catch (err) {
+      setLogoError(err instanceof ApiError ? err.message : 'Logo verwijderen is niet gelukt.');
+    } finally {
+      setLogoBusy(false);
+    }
+  }
 
   function startEditing() {
     setForm(detailsOf(current));
@@ -160,10 +194,46 @@ export function MyOrganizationPage({ organization, loading, types, onUpdated, on
       </section>
 
       <section className="org-hero">
-        <div className="org-hero-avatar">{initials(current.name) || <Building2 size={26} />}</div>
+        <button
+          type="button"
+          className={`org-logo ${currentLogo ? 'has-logo' : ''}`}
+          onClick={() => logoInputRef.current?.click()}
+          disabled={logoBusy}
+          title={currentLogo ? 'Logo wijzigen' : 'Logo toevoegen'}
+          aria-label={currentLogo ? 'Logo wijzigen' : 'Logo toevoegen'}
+        >
+          {currentLogo ? (
+            <img src={currentLogo} alt={`Logo van ${current.name}`} />
+          ) : (
+            <ImagePlus size={22} aria-hidden="true" />
+          )}
+        </button>
         <div className="org-hero-copy">
           <h2>{current.name}</h2>
           <p>Klant sinds {customerSince}</p>
+          <div className="org-logo-actions">
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              style={{ display: 'none' }}
+              onChange={handleLogoSelected}
+            />
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => logoInputRef.current?.click()}
+              disabled={logoBusy}
+            >
+              <ImagePlus size={14} /> {logoBusy ? 'Bezig...' : currentLogo ? 'Logo wijzigen' : 'Logo toevoegen'}
+            </button>
+            {currentLogo && (
+              <button type="button" className="text-button org-logo-remove" onClick={handleLogoRemove} disabled={logoBusy}>
+                <Trash2 size={14} /> Verwijderen
+              </button>
+            )}
+          </div>
+          {logoError && <p className="form-error">{logoError}</p>}
         </div>
         <span className="status-pill status-green">
           <span className="status-dot" />

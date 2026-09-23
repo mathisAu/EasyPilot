@@ -433,7 +433,6 @@ button.sidebar-footer:hover { background: #18355a; }
 /* Customer "Mijn organisatie" page. */
 .org-loading { display: flex; align-items: center; gap: 8px; margin-top: 30px; }
 .org-hero { display: flex; align-items: center; gap: 18px; margin-top: 30px; padding: 22px 24px; border: 1px solid #e2e9f0; border-radius: 12px; background: linear-gradient(135deg, #ffffff 0%, #f1f8ff 100%); }
-.org-hero-avatar { display: grid; flex: 0 0 auto; place-items: center; width: 60px; height: 60px; color: #fff; border-radius: 14px; background: linear-gradient(135deg, #1689e6, #0c5fa8); box-shadow: 0 8px 18px #1689e633; font: 800 21px 'Manrope', sans-serif; }
 .org-hero-copy { flex: 1; min-width: 0; }
 .org-hero-copy h2 { font-size: 21px; }
 .org-hero-copy p { margin: 4px 0 0; color: #77889f; font-size: 13px; }
@@ -463,3 +462,13 @@ button.sidebar-footer:hover { background: #18355a; }
 .org-detail-list dt { color: #8193a7; font-size: 12px; }
 .org-detail-list dd { margin: 0; color: #243f60; font-size: 12px; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
 .org-detail-list dd.empty { color: #b3bfcc; font-weight: 500; font-style: italic; }
+
+/* Organisation logo slot: empty dashed box until a logo is uploaded. */
+.org-logo { display: grid; flex: 0 0 auto; place-items: center; width: 72px; height: 72px; padding: 0; overflow: hidden; color: #9fb2c6; border: 2px dashed #c9d7e5; border-radius: 14px; background: #f8fbfe; cursor: pointer; transition: border-color .15s ease, color .15s ease, background .15s ease; }
+.org-logo:hover { color: #1689e6; border-color: #80bce8; background: #f0f8ff; }
+.org-logo.has-logo { border: 1px solid #e2e9f0; background: #fff; }
+.org-logo img { width: 100%; height: 100%; padding: 6px; object-fit: contain; }
+.org-logo-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 8px; }
+.org-logo-actions .text-button { gap: 5px; padding: 0; }
+.org-logo-remove { color: #c4553a; }
+.org-hero .form-error { margin: 6px 0 0; }

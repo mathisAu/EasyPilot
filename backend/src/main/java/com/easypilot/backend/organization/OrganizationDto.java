@@ -16,6 +16,8 @@ public record OrganizationDto(
         String website,
         String contactName,
         String contactEmail,
-        String contactPhone
+        String contactPhone,
+        /** When the current logo was uploaded; null if there is none. Doubles as a cache-buster. */
+        Instant logoUpdatedAt
 ) {
 }

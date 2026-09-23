@@ -106,6 +106,8 @@ export interface Organization {
   contactName: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
+  /** When the current logo was uploaded; null if the organisation has no logo. */
+  logoUpdatedAt: string | null;
 }
 
 export type OrganizationDetails = Pick<

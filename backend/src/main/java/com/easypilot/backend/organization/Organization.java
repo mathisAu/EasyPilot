@@ -40,6 +40,11 @@ public class Organization {
     private String contactEmail;
     private String contactPhone;
 
+    // Logo stored in the same file storage as documents; null when none uploaded.
+    private String logoStoredFilename;
+    private String logoContentType;
+    private Instant logoUpdatedAt;
+
     @OneToMany(mappedBy = "organization", cascade = CascadeType.ALL)
     private List<DocumentType> documentTypes = new ArrayList<>();
 
@@ -142,5 +147,23 @@ public class Organization {
 
     public void setContactPhone(String contactPhone) {
         this.contactPhone = contactPhone;
+    }
+
+    public String getLogoStoredFilename() {
+        return logoStoredFilename;
+    }
+
+    public String getLogoContentType() {
+        return logoContentType;
+    }
+
+    public Instant getLogoUpdatedAt() {
+        return logoUpdatedAt;
+    }
+
+    public void setLogo(String storedFilename, String contentType) {
+        this.logoStoredFilename = storedFilename;
+        this.logoContentType = contentType;
+        this.logoUpdatedAt = storedFilename != null ? Instant.now() : null;
     }
 }
