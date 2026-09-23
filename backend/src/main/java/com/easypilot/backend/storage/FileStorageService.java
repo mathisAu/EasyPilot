@@ -4,19 +4,26 @@ import com.easypilot.backend.common.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.net.URI;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 @Service
@@ -24,65 +31,70 @@ public class FileStorageService {
 
     private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
 
-    private final Path root;
+    private final S3Client s3Client;
+    private final String bucket;
 
-    public FileStorageService(@Value("${app.storage.location}") String location) {
-        this.root = Paths.get(location).toAbsolutePath().normalize();
+    public FileStorageService(@Value("${app.storage.s3.endpoint}") String endpoint,
+                               @Value("${app.storage.s3.region}") String region,
+                               @Value("${app.storage.s3.bucket}") String bucket,
+                               @Value("${app.storage.s3.access-key}") String accessKey,
+                               @Value("${app.storage.s3.secret-key}") String secretKey) {
+        this.bucket = bucket;
+        this.s3Client = S3Client.builder()
+                .endpointOverride(URI.create(endpoint))
+                .region(Region.of(region))
+                .forcePathStyle(true)
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(accessKey, secretKey)))
+                .build();
+        ensureBucketExists();
+    }
+
+    private void ensureBucketExists() {
         try {
-            Files.createDirectories(root);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Kon opslagmap niet aanmaken: " + root, e);
+            s3Client.headBucket(b -> b.bucket(bucket));
+        } catch (NoSuchBucketException e) {
+            s3Client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
         }
     }
 
     public String store(MultipartFile file) {
         String extension = extractExtension(file.getOriginalFilename());
         String storedFilename = UUID.randomUUID() + extension;
-        Path target = root.resolve(storedFilename).normalize();
-        if (!target.getParent().equals(root)) {
-            throw new IllegalArgumentException("Ongeldige bestandsnaam");
-        }
         try {
-            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+            s3Client.putObject(
+                    PutObjectRequest.builder()
+                            .bucket(bucket)
+                            .key(storedFilename)
+                            .contentType(file.getContentType())
+                            .build(),
+                    RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
         } catch (IOException e) {
             throw new UncheckedIOException("Kon bestand niet opslaan", e);
+        } catch (SdkException e) {
+            throw new UncheckedIOException("Kon bestand niet opslaan", new IOException(e));
         }
         return storedFilename;
     }
 
     public Resource loadAsResource(String storedFilename) {
-        Path path = root.resolve(storedFilename).normalize();
-        if (!path.getParent().equals(root)) {
-            throw new ResourceNotFoundException("Bestand niet gevonden");
-        }
-        try {
-            Resource resource = new UrlResource(path.toUri());
-            if (!resource.exists() || !resource.isReadable()) {
-                throw new ResourceNotFoundException("Bestand niet gevonden");
-            }
-            return resource;
-        } catch (MalformedURLException e) {
-            throw new ResourceNotFoundException("Bestand niet gevonden");
-        }
+        return new ByteArrayResource(readAllBytes(storedFilename));
     }
 
     public byte[] readAllBytes(String storedFilename) {
-        try (InputStream in = loadAsResource(storedFilename).getInputStream()) {
-            return in.readAllBytes();
-        } catch (IOException e) {
-            throw new UncheckedIOException("Kon bestand niet lezen voor extractie", e);
+        try {
+            return s3Client.getObjectAsBytes(
+                    GetObjectRequest.builder().bucket(bucket).key(storedFilename).build()).asByteArray();
+        } catch (SdkException e) {
+            throw new ResourceNotFoundException("Bestand niet gevonden");
         }
     }
 
     public void delete(String storedFilename) {
         try {
-            Path path = root.resolve(storedFilename).normalize();
-            if (!path.getParent().equals(root)) {
-                return;
-            }
-            Files.deleteIfExists(path);
-        } catch (IOException e) {
-            log.warn("Kon bestand {} niet verwijderen van schijf", storedFilename, e);
+            s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(storedFilename).build());
+        } catch (SdkException e) {
+            log.warn("Kon bestand {} niet verwijderen uit storage", storedFilename, e);
         }
     }
 
