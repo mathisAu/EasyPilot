@@ -46,6 +46,10 @@ public class SecurityConfig {
                         .csrfTokenRequestHandler(requestHandler))
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
                 .httpBasic(HttpBasicConfigurer::disable)
+                // Allow same-origin framing so uploaded PDFs/images can render inline
+                // in an <embed>/<iframe> (e.g. the document review screen); Spring
+                // Security's default X-Frame-Options: DENY blocks that entirely.
+                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/**").authenticated()
