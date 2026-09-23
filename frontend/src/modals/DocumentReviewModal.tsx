@@ -39,6 +39,8 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
   const [savingStatus, setSavingStatus] = useState(false);
   const [error, setError] = useState('');
 
+  const selectedDoc = documents.find((doc) => doc.id === selectedDocId) ?? null;
+
   useEffect(() => {
     setLoading(true);
     listDocuments(documentType.id)
@@ -57,6 +59,18 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
     setStatus(documentType.status);
   }, [documentType.status]);
 
+  // Poll while extraction is still running so "bezig" resolves into the real
+  // result on its own, instead of leaving a stale state until the modal is reopened.
+  useEffect(() => {
+    if (!selectedDoc) return;
+    if (selectedDoc.extractionStatus !== 'PENDING' && selectedDoc.extractionStatus !== 'IN_PROGRESS') return;
+    const interval = window.setInterval(() => {
+      listDocuments(documentType.id).then(setDocuments).catch(() => {});
+    }, 3000);
+    return () => window.clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentType.id, selectedDocId, selectedDoc?.extractionStatus]);
+
   useEffect(() => {
     if (selectedDocId === null) return;
     setLoadingFields(true);
@@ -74,9 +88,9 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Kon uitgelezen velden niet laden.'))
       .finally(() => setLoadingFields(false));
-  }, [selectedDocId]);
-
-  const selectedDoc = documents.find((doc) => doc.id === selectedDocId) ?? null;
+    // Also refetch once extraction finishes (status flips from IN_PROGRESS/PENDING to DONE/FAILED).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDocId, selectedDoc?.extractionStatus]);
 
   async function handleSaveFields() {
     if (selectedDocId === null) return;

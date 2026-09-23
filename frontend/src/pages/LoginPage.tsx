@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { LogIn, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { ApiError } from '../api/client';
@@ -12,13 +12,22 @@ export function LoginPage() {
   const [needsTotp, setNeedsTotp] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const usernameRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const totpRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError('');
     setSubmitting(true);
+    // Read the live DOM value as a fallback: browser autofill doesn't always fire
+    // React's onChange before the first Enter-triggered submit, which left the
+    // controlled state empty/stale and made the very first login attempt fail.
+    const effectiveUsername = usernameRef.current?.value || username;
+    const effectivePassword = passwordRef.current?.value || password;
+    const effectiveTotp = totpRef.current?.value || totpCode;
     try {
-      await login(username, password, needsTotp ? totpCode : undefined);
+      await login(effectiveUsername, effectivePassword, needsTotp ? effectiveTotp : undefined);
     } catch (err) {
       if (err instanceof TotpRequiredError) {
         setNeedsTotp(true);
@@ -54,6 +63,7 @@ export function LoginPage() {
             <label>
               Gebruikersnaam
               <input
+                ref={usernameRef}
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 autoFocus
@@ -63,6 +73,7 @@ export function LoginPage() {
             <label>
               Wachtwoord
               <input
+                ref={passwordRef}
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
@@ -76,6 +87,7 @@ export function LoginPage() {
           <label>
             Verificatiecode
             <input
+              ref={totpRef}
               value={totpCode}
               onChange={(event) => setTotpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
               autoFocus
