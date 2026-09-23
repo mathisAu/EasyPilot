@@ -21,16 +21,16 @@ public class ExtractionTransactionSupport {
     private final DocumentRepository documentRepository;
     private final ExtractedFieldRepository extractedFieldRepository;
     private final FileStorageService fileStorageService;
-    private final AnthropicClientHolder anthropicClientHolder;
+    private final GeminiClientHolder geminiClientHolder;
 
     public ExtractionTransactionSupport(DocumentRepository documentRepository,
                                          ExtractedFieldRepository extractedFieldRepository,
                                          FileStorageService fileStorageService,
-                                         AnthropicClientHolder anthropicClientHolder) {
+                                         GeminiClientHolder geminiClientHolder) {
         this.documentRepository = documentRepository;
         this.extractedFieldRepository = extractedFieldRepository;
         this.fileStorageService = fileStorageService;
-        this.anthropicClientHolder = anthropicClientHolder;
+        this.geminiClientHolder = geminiClientHolder;
     }
 
     @Transactional
@@ -58,9 +58,9 @@ public class ExtractionTransactionSupport {
             return null;
         }
 
-        if (!anthropicClientHolder.isAvailable()) {
+        if (!geminiClientHolder.isAvailable()) {
             document.setExtractionStatus(ExtractionStatus.FAILED);
-            document.setExtractionError(anthropicClientHolder.unavailableReason());
+            document.setExtractionError(geminiClientHolder.unavailableReason());
             documentRepository.save(document);
             return null;
         }

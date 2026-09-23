@@ -1,21 +1,17 @@
 package com.easypilot.backend.extraction;
 
-import com.anthropic.client.AnthropicClient;
-import com.anthropic.errors.AnthropicServiceException;
-import com.anthropic.models.messages.Base64PdfSource;
-import com.anthropic.models.messages.ContentBlockParam;
-import com.anthropic.models.messages.DocumentBlockParam;
-import com.anthropic.models.messages.Message;
-import com.anthropic.models.messages.MessageCreateParams;
-import com.anthropic.models.messages.TextBlockParam;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,17 +19,19 @@ import java.util.Map;
 public class ExtractionService {
 
     private static final Logger log = LoggerFactory.getLogger(ExtractionService.class);
-    private static final String MODEL = "claude-opus-5";
 
     private final ExtractionTransactionSupport transactionSupport;
-    private final AnthropicClientHolder anthropicClientHolder;
+    private final GeminiClientHolder geminiClientHolder;
+    private final RestClient geminiRestClient;
     private final ObjectMapper objectMapper;
 
     public ExtractionService(ExtractionTransactionSupport transactionSupport,
-                              AnthropicClientHolder anthropicClientHolder,
+                              GeminiClientHolder geminiClientHolder,
+                              RestClient geminiRestClient,
                               ObjectMapper objectMapper) {
         this.transactionSupport = transactionSupport;
-        this.anthropicClientHolder = anthropicClientHolder;
+        this.geminiClientHolder = geminiClientHolder;
+        this.geminiRestClient = geminiRestClient;
         this.objectMapper = objectMapper;
     }
 
@@ -51,62 +49,66 @@ public class ExtractionService {
         if (ctx == null) {
             return;
         }
-        ExtractionResult result = callAnthropic(ctx);
+        ExtractionResult result = callGemini(ctx);
         transactionSupport.persistResult(documentId, ctx.fieldNames(), result);
     }
 
-    private ExtractionResult callAnthropic(ExtractContext ctx) {
+    private ExtractionResult callGemini(ExtractContext ctx) {
         try {
-            AnthropicClient client = anthropicClientHolder.client();
             String base64Data = Base64.getEncoder().encodeToString(ctx.bytes());
             String prompt = buildPrompt(ctx.fieldNames());
+            String contentKind = "application/pdf".equalsIgnoreCase(ctx.contentType()) ? "document" : "image";
 
-            ContentBlockParam fileBlock;
-            if ("application/pdf".equalsIgnoreCase(ctx.contentType())) {
-                DocumentBlockParam doc = DocumentBlockParam.builder()
-                        .source(Base64PdfSource.builder().data(base64Data).build())
-                        .build();
-                fileBlock = ContentBlockParam.ofDocument(doc);
-            } else {
-                fileBlock = buildImageBlock(base64Data, ctx.contentType());
-            }
+            Map<String, Object> filePart = new LinkedHashMap<>();
+            filePart.put("type", contentKind);
+            filePart.put("data", base64Data);
+            filePart.put("mime_type", ctx.contentType());
 
-            MessageCreateParams params = MessageCreateParams.builder()
-                    .model(MODEL)
-                    .maxTokens(4096L)
-                    .addUserMessageOfBlockParams(List.of(
-                            fileBlock,
-                            ContentBlockParam.ofText(TextBlockParam.builder().text(prompt).build())
-                    ))
-                    .build();
+            Map<String, Object> textPart = new LinkedHashMap<>();
+            textPart.put("type", "text");
+            textPart.put("text", prompt);
 
-            Message response = client.messages().create(params);
+            Map<String, Object> requestBody = new LinkedHashMap<>();
+            requestBody.put("model", geminiClientHolder.model());
+            requestBody.put("input", List.of(filePart, textPart));
 
-            StringBuilder rawText = new StringBuilder();
-            for (var block : response.content()) {
-                block.text().ifPresent(t -> rawText.append(t.text()));
-            }
+            JsonNode response = geminiRestClient.post()
+                    .uri("/v1beta/interactions")
+                    .header("x-goog-api-key", geminiClientHolder.apiKey())
+                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                    .body(requestBody)
+                    .retrieve()
+                    .body(JsonNode.class);
 
-            Map<String, String> parsed = parseJsonResponse(rawText.toString());
+            String rawText = extractText(response);
+            Map<String, String> parsed = parseJsonResponse(rawText);
             return ExtractionResult.success(parsed);
-        } catch (AnthropicServiceException e) {
-            log.warn("Anthropic API-fout tijdens extractie: {}", e.getMessage());
-            return ExtractionResult.failure("Extractie via Claude is mislukt: " + e.getMessage());
+        } catch (RestClientResponseException e) {
+            log.warn("Gemini API-fout tijdens extractie: {} {}", e.getStatusCode(), e.getResponseBodyAsString());
+            return ExtractionResult.failure("Extractie via Gemini is mislukt: " + e.getStatusCode() + " " + e.getResponseBodyAsString());
         } catch (Exception e) {
             log.error("Onverwachte fout tijdens extractie", e);
             return ExtractionResult.failure("Er ging iets mis tijdens de extractie: " + e.getMessage());
         }
     }
 
-    private ContentBlockParam buildImageBlock(String base64Data, String contentType) {
-        com.anthropic.models.messages.Base64ImageSource source = com.anthropic.models.messages.Base64ImageSource.builder()
-                .data(base64Data)
-                .mediaType(com.anthropic.models.messages.Base64ImageSource.MediaType.of(contentType))
-                .build();
-        com.anthropic.models.messages.ImageBlockParam image = com.anthropic.models.messages.ImageBlockParam.builder()
-                .source(source)
-                .build();
-        return ContentBlockParam.ofImage(image);
+    private String extractText(JsonNode response) {
+        StringBuilder result = new StringBuilder();
+        if (response == null) {
+            return "";
+        }
+        JsonNode steps = response.path("steps");
+        for (JsonNode step : steps) {
+            if (!"model_output".equals(step.path("type").asText())) {
+                continue;
+            }
+            for (JsonNode contentBlock : step.path("content")) {
+                if ("text".equals(contentBlock.path("type").asText())) {
+                    result.append(contentBlock.path("text").asText());
+                }
+            }
+        }
+        return result.toString();
     }
 
     private String buildPrompt(List<String> fieldNames) {
@@ -131,7 +133,7 @@ public class ExtractionService {
             });
         } catch (Exception e) {
             log.warn("Kon extractie-antwoord niet parsen als JSON: {}", cleaned);
-            throw new IllegalStateException("Onverwachte reactie van Claude ontvangen", e);
+            throw new IllegalStateException("Onverwachte reactie van Gemini ontvangen", e);
         }
     }
 }
