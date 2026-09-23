@@ -42,6 +42,8 @@ export function TicketList({
   const openTickets = tickets.filter((ticket) => ticket.status !== 'CLOSED');
   const closedTickets = tickets.filter((ticket) => ticket.status === 'CLOSED');
   const ticketIdsWithDraft = new Set(drafts.map((draft) => draft.ticketId).filter((id): id is number => id != null));
+  // An open ticket with an unsent reply is already listed under Concepten; don't show it twice.
+  const openTicketsWithoutDraft = openTickets.filter((ticket) => !ticketIdsWithDraft.has(ticket.id));
 
   function renderRows(list: TicketSummary[]) {
     return (
@@ -131,7 +133,7 @@ export function TicketList({
         </div>
       )}
 
-      {!loading && openTickets.length > 0 && renderRows(openTickets)}
+      {!loading && openTicketsWithoutDraft.length > 0 && renderRows(openTicketsWithoutDraft)}
 
       {!loading && closedTickets.length > 0 && (
         <>
