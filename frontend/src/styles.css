@@ -179,6 +179,10 @@ button { cursor: pointer; }
 .customer-cell-link:hover strong { color: #1687e5; text-decoration: underline; }
 .type-card-title { padding: 0; color: inherit; border: 0; background: transparent; text-align: left; font: inherit; letter-spacing: inherit; }
 .type-card-title:hover { color: #1687e5; text-decoration: underline; }
+.ticket-closed-heading { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 30px; padding: 6px 0; color: #6d8198; border: 0; border-bottom: 1px solid #e2e9f0; background: transparent; text-align: left; }
+.ticket-closed-heading h3 { margin: 0; color: #152f55; font: 700 16px 'Manrope', sans-serif; letter-spacing: -.4px; }
+.ticket-closed-heading:hover h3 { color: #1687e5; }
+.ticket-closed-count { padding: 1px 8px; color: #6d8198; border-radius: 10px; background: #eef2f6; font-size: 11px; font-weight: 700; }
 .folder-list-icon { flex: 0 0 auto; color: #8b9aae; }
 .folder-picker-item.selected .folder-list-icon, .folder-list-current { color: #1689e6; }
 .folder-list-current { flex: 0 0 auto; margin-left: auto; }
