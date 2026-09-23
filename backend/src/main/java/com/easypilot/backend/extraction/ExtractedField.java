@@ -36,6 +36,9 @@ public class ExtractedField {
     @Column(nullable = false)
     private boolean edited = false;
 
+    @Column(nullable = false, columnDefinition = "boolean not null default true")
+    private boolean included = true;
+
     private Instant updatedAt;
 
     @PrePersist
@@ -82,6 +85,14 @@ public class ExtractedField {
 
     public void setEdited(boolean edited) {
         this.edited = edited;
+    }
+
+    public boolean isIncluded() {
+        return included;
+    }
+
+    public void setIncluded(boolean included) {
+        this.included = included;
     }
 
     public Instant getUpdatedAt() {

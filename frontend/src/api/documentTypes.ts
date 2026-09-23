@@ -30,6 +30,7 @@ interface BackendExtractedFieldDto {
   fieldName: string;
   value: string | null;
   edited: boolean;
+  included: boolean;
   updatedAt: string;
 }
 
@@ -94,6 +95,7 @@ function mapExtractedField(dto: BackendExtractedFieldDto): ExtractedField {
     fieldName: dto.fieldName,
     value: dto.value,
     edited: dto.edited,
+    included: dto.included,
     updatedAt: dto.updatedAt,
   };
 }
@@ -175,7 +177,7 @@ export async function getExtractedFields(documentId: number): Promise<ExtractedF
 
 export async function updateExtractedFields(
   documentId: number,
-  fields: { fieldName: string; value: string }[]
+  fields: { fieldName: string; value: string; included: boolean }[]
 ): Promise<ExtractedField[]> {
   const result = await apiFetch<BackendExtractedFieldDto[]>(`/api/documents/${documentId}/extracted-fields`, {
     method: 'PUT',

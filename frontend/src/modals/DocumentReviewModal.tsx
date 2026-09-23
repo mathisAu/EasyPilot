@@ -82,7 +82,7 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
         const initialConfirmed: Record<string, boolean> = {};
         result.forEach((field) => {
           initial[field.fieldName] = field.value ?? '';
-          initialConfirmed[field.fieldName] = Boolean(field.value && field.value.trim().length > 0);
+          initialConfirmed[field.fieldName] = field.included;
         });
         setValues(initial);
         setConfirmed(initialConfirmed);
@@ -98,7 +98,11 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
     setSavingFields(true);
     setError('');
     try {
-      const payload = fields.map((field) => ({ fieldName: field.fieldName, value: values[field.fieldName] ?? '' }));
+      const payload = fields.map((field) => ({
+        fieldName: field.fieldName,
+        value: values[field.fieldName] ?? '',
+        included: confirmed[field.fieldName] ?? true,
+      }));
       const updated = await updateExtractedFields(selectedDocId, payload);
       setFields(updated);
     } catch (err) {
@@ -247,8 +251,8 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
                             setConfirmed((current) => ({ ...current, [field.fieldName]: !current[field.fieldName] }))
                           }
                           aria-pressed={Boolean(confirmed[field.fieldName])}
-                          aria-label={`${field.fieldName} ${confirmed[field.fieldName] ? 'bevestigd' : 'niet bevestigd'}`}
-                          title="Bevestig dit veld"
+                          aria-label={`${field.fieldName} ${confirmed[field.fieldName] ? 'wordt opgenomen in de samenvatting' : 'wordt weggelaten uit de samenvatting'}`}
+                          title="Opnemen in de samenvatting (uitvinken sluit dit veld uit bij downloaden)"
                         >
                           <Check size={14} />
                         </button>
@@ -271,7 +275,7 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
                       )}
                     </div>
                     <p className="modal-description review-summary-hint">
-                      De samenvatting bevat de laatst opgeslagen waarden. Sla eerst op voordat je downloadt.
+                      De samenvatting bevat alleen de aangevinkte, opgeslagen velden. Sla eerst op voordat je downloadt.
                     </p>
                   </>
                 )}

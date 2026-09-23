@@ -77,10 +77,10 @@ public class DocumentService {
     public SummaryPdf generateSummaryPdf(Long documentId, AppUser currentUser) {
         Document document = getOrThrow(documentId);
         documentTypeService.getVisibleOrThrow(document.getDocumentType().getId(), currentUser);
-        // Only the fields the admin left filled in go into the summary — a field
-        // cleared out in the review screen is simply absent, not redacted.
+        // Only fields the admin left checked (included) and filled in go into the
+        // summary — unchecking a field, or clearing its value, leaves it out.
         List<ExtractedField> filled = extractedFieldRepository.findByDocumentIdOrderByIdAsc(documentId).stream()
-                .filter(field -> field.getValue() != null && !field.getValue().isBlank())
+                .filter(field -> field.isIncluded() && field.getValue() != null && !field.getValue().isBlank())
                 .toList();
         byte[] pdf = SummaryPdfGenerator.generate(
                 document.getDocumentType().getName(), document.getOriginalFilename(), filled);
@@ -113,6 +113,7 @@ public class DocumentService {
             if (field != null) {
                 field.setValue(update.value());
                 field.setEdited(true);
+                field.setIncluded(update.included());
             }
         }
         return existing.stream().map(ExtractedFieldDto::from).toList();
