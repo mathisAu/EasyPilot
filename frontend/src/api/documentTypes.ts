@@ -8,6 +8,7 @@ interface BackendDocumentTypeDto {
   status: string;
   fields: string[];
   documentCount: number;
+  latestDocumentFilename: string | null;
   organizationId: number | null;
   organizationName: string | null;
   createdAt: string;
@@ -70,6 +71,7 @@ function mapType(dto: BackendDocumentTypeDto): DocumentType {
     status: STATUS_FROM_BACKEND[dto.status] ?? 'Aangeleverd',
     fieldList: dto.fields,
     examples: dto.documentCount,
+    latestDocumentFilename: dto.latestDocumentFilename,
     organizationId: dto.organizationId,
     organizationName: dto.organizationName,
     createdAt: dto.createdAt,

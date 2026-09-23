@@ -1,4 +1,4 @@
-import { ChevronRight, FileText, Plus, Sparkles } from 'lucide-react';
+import { ChevronRight, File, FileText, Plus, Sparkles } from 'lucide-react';
 import { StatusPill } from '../components/StatusPill';
 import { toneFor } from '../data';
 import type { DocumentType } from '../types';
@@ -38,6 +38,7 @@ export function ClientDocumentsPage({ types, loading, onAdd, onView }: ClientDoc
               <tr>
                 <th>Documenttype</th>
                 <th>Opdrachtgever</th>
+                <th>Document</th>
                 <th>Voorbeelden</th>
                 <th>Status</th>
                 <th aria-label="Acties" />
@@ -53,6 +54,16 @@ export function ClientDocumentsPage({ types, loading, onAdd, onView }: ClientDoc
                     </div>
                   </td>
                   <td>{type.provider}</td>
+                  <td>
+                    {type.latestDocumentFilename ? (
+                      <span className="document-cell">
+                        <File size={14} />
+                        {type.latestDocumentFilename}
+                      </span>
+                    ) : (
+                      <span className="document-cell document-cell-empty">—</span>
+                    )}
+                  </td>
                   <td>{type.examples}</td>
                   <td>
                     <StatusPill tone={toneFor(type.status)}>{type.status}</StatusPill>

@@ -45,6 +45,7 @@ export interface DocumentType {
   examples: number;
   status: RequestStatus;
   fieldList: string[];
+  latestDocumentFilename?: string | null;
   organizationId?: number | null;
   organizationName?: string | null;
   createdAt?: string;
