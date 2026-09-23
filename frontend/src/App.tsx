@@ -194,6 +194,9 @@ function AppShell() {
             onView={setViewingType}
             onEdit={handleOpenEditType}
             onDelete={handleDeleteType}
+            onTypeUpdated={(updated) =>
+              setDocumentTypes((current) => current.map((type) => (type.id === updated.id ? updated : type)))
+            }
           />
         );
       case 'Organisaties':
