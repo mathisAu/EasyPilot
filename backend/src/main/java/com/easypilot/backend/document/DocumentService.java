@@ -87,6 +87,49 @@ public class DocumentService {
         return new SummaryPdf(document.getDocumentType().getName() + " - samenvatting.pdf", pdf);
     }
 
+    public record RedactedFile(String filename, String contentType, byte[] content) {
+    }
+
+    @Transactional(readOnly = true)
+    public RedactedFile generateRedactedFile(Long documentId, AppUser currentUser) {
+        Document document = getOrThrow(documentId);
+        documentTypeService.getVisibleOrThrow(document.getDocumentType().getId(), currentUser);
+
+        List<DocumentRedactor.FieldEdit> edits = extractedFieldRepository.findByDocumentIdOrderByIdAsc(documentId)
+                .stream()
+                .filter(ExtractedField::hasBox)
+                .map(field -> new DocumentRedactor.FieldEdit(
+                        field.getBoxPage() != null ? field.getBoxPage() : 0,
+                        field.getBoxX(), field.getBoxY(), field.getBoxWidth(), field.getBoxHeight(),
+                        field.isIncluded() ? field.getValue() : null))
+                .toList();
+
+        byte[] originalBytes = fileStorageService.readAllBytes(document.getStoredFilename());
+        String contentType = document.getContentType();
+        byte[] content = "application/pdf".equalsIgnoreCase(contentType)
+                ? DocumentRedactor.redactPdf(originalBytes, edits)
+                : DocumentRedactor.redactImage(originalBytes, imageFormatFor(contentType), edits);
+
+        String filename = document.getDocumentType().getName() + " - aangepast" + extensionOf(document.getOriginalFilename());
+        return new RedactedFile(filename, contentType, content);
+    }
+
+    private String imageFormatFor(String contentType) {
+        if (contentType == null) {
+            return "png";
+        }
+        return switch (contentType.toLowerCase()) {
+            case "image/jpeg", "image/jpg" -> "jpg";
+            case "image/png" -> "png";
+            default -> "png";
+        };
+    }
+
+    private String extensionOf(String filename) {
+        int dot = filename == null ? -1 : filename.lastIndexOf('.');
+        return dot >= 0 ? filename.substring(dot) : "";
+    }
+
     @Transactional
     public void delete(Long id) {
         Document document = getOrThrow(id);

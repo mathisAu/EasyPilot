@@ -39,6 +39,16 @@ public class ExtractedField {
     @Column(nullable = false, columnDefinition = "boolean not null default true")
     private boolean included = true;
 
+    // Where this field's value sits on the source document, as fractions (0-1) of
+    // page/image width and height from the top-left corner. Null when the AI
+    // couldn't locate the field, or for documents extracted before this existed —
+    // used only to burn edits into a downloadable copy of the original file.
+    private Integer boxPage;
+    private Double boxX;
+    private Double boxY;
+    private Double boxWidth;
+    private Double boxHeight;
+
     private Instant updatedAt;
 
     @PrePersist
@@ -97,5 +107,49 @@ public class ExtractedField {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Integer getBoxPage() {
+        return boxPage;
+    }
+
+    public void setBoxPage(Integer boxPage) {
+        this.boxPage = boxPage;
+    }
+
+    public Double getBoxX() {
+        return boxX;
+    }
+
+    public void setBoxX(Double boxX) {
+        this.boxX = boxX;
+    }
+
+    public Double getBoxY() {
+        return boxY;
+    }
+
+    public void setBoxY(Double boxY) {
+        this.boxY = boxY;
+    }
+
+    public Double getBoxWidth() {
+        return boxWidth;
+    }
+
+    public void setBoxWidth(Double boxWidth) {
+        this.boxWidth = boxWidth;
+    }
+
+    public Double getBoxHeight() {
+        return boxHeight;
+    }
+
+    public void setBoxHeight(Double boxHeight) {
+        this.boxHeight = boxHeight;
+    }
+
+    public boolean hasBox() {
+        return boxX != null && boxY != null && boxWidth != null && boxHeight != null;
     }
 }

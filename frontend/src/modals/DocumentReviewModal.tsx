@@ -4,6 +4,7 @@ import {
   getExtractedFields,
   listDocuments,
   previewUrl,
+  redactedUrl,
   retryExtraction,
   summaryUrl,
   updateDocumentTypeStatus,
@@ -279,6 +280,41 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged, on
                     <p className="modal-description review-summary-hint">
                       De samenvatting bevat alleen de aangevinkte, opgeslagen velden. Sla eerst op voordat je downloadt.
                     </p>
+
+                    {selectedDoc.extractionStatus === 'DONE' && (
+                      <>
+                        {fields.some((field) => field.hasLocation) ? (
+                          <>
+                            <a
+                              href={redactedUrl(selectedDoc.id)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="secondary-button review-redacted-link"
+                              title="Downloadt het originele document met de opgeslagen wijzigingen erin verwerkt"
+                            >
+                              <Download size={14} /> Aangepast document downloaden
+                            </a>
+                            <p className="modal-description review-summary-hint">
+                              Dit is het originele bestand zelf: uitgevinkte of gewijzigde velden worden op hun
+                              plek overschilderd. Niet elk veld is altijd gevonden — controleer het resultaat.
+                            </p>
+                          </>
+                        ) : (
+                          <div className="info-callout">
+                            <div>
+                              <strong>Posities nog niet bekend</strong>
+                              <p>
+                                Dit document is uitgelezen vóór deze functie bestond. Lees het opnieuw uit om het
+                                originele bestand met wijzigingen te kunnen downloaden.
+                              </p>
+                            </div>
+                            <button type="button" className="secondary-button" onClick={handleRetryExtraction} disabled={retrying}>
+                              <RefreshCw size={14} /> {retrying ? 'Bezig...' : 'Opnieuw uitlezen'}
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </>
                 )}
 

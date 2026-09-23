@@ -68,6 +68,7 @@ export interface ExtractedField {
   value: string | null;
   edited: boolean;
   included: boolean;
+  hasLocation: boolean;
   updatedAt: string;
 }
 

@@ -7,6 +7,7 @@ public record ExtractedFieldDto(
         String value,
         boolean edited,
         boolean included,
+        boolean hasLocation,
         Instant updatedAt
 ) {
 
@@ -16,6 +17,7 @@ public record ExtractedFieldDto(
                 entity.getValue(),
                 entity.isEdited(),
                 entity.isIncluded(),
+                entity.hasBox(),
                 entity.getUpdatedAt()
         );
     }

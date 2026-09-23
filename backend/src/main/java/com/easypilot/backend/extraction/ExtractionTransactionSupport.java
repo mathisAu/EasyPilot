@@ -83,12 +83,21 @@ public class ExtractionTransactionSupport {
         extractedFieldRepository.deleteByDocumentId(documentId);
 
         if (result.isSuccess()) {
-            Map<String, String> values = result.values() != null ? result.values() : Map.of();
+            Map<String, ExtractedValue> values = result.values() != null ? result.values() : Map.of();
             for (String fieldName : fieldNames) {
+                ExtractedValue extracted = values.get(fieldName);
                 ExtractedField field = new ExtractedField();
                 field.setDocument(document);
                 field.setFieldName(fieldName);
-                field.setValue(values.get(fieldName));
+                field.setValue(extracted != null ? extracted.value() : null);
+                FieldBox box = extracted != null ? extracted.box() : null;
+                if (box != null) {
+                    field.setBoxPage(box.page());
+                    field.setBoxX(box.x());
+                    field.setBoxY(box.y());
+                    field.setBoxWidth(box.width());
+                    field.setBoxHeight(box.height());
+                }
                 extractedFieldRepository.save(field);
             }
             document.setExtractionStatus(ExtractionStatus.DONE);

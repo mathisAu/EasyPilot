@@ -31,6 +31,7 @@ interface BackendExtractedFieldDto {
   value: string | null;
   edited: boolean;
   included: boolean;
+  hasLocation: boolean;
   updatedAt: string;
 }
 
@@ -96,6 +97,7 @@ function mapExtractedField(dto: BackendExtractedFieldDto): ExtractedField {
     value: dto.value,
     edited: dto.edited,
     included: dto.included,
+    hasLocation: dto.hasLocation,
     updatedAt: dto.updatedAt,
   };
 }
@@ -168,6 +170,10 @@ export function previewUrl(id: number): string {
 
 export function summaryUrl(id: number): string {
   return `/api/documents/${id}/summary`;
+}
+
+export function redactedUrl(id: number): string {
+  return `/api/documents/${id}/redacted`;
 }
 
 export async function getExtractedFields(documentId: number): Promise<ExtractedField[]> {

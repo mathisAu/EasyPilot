@@ -1,6 +1,5 @@
 package com.easypilot.backend.extraction;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -81,7 +80,7 @@ public class ExtractionService {
                     .body(JsonNode.class);
 
             String rawText = extractText(response);
-            Map<String, String> parsed = parseJsonResponse(rawText);
+            Map<String, ExtractedValue> parsed = parseJsonResponse(rawText);
             return ExtractionResult.success(parsed);
         } catch (RestClientResponseException e) {
             log.warn("Gemini API-fout tijdens extractie: {} {}", e.getStatusCode(), e.getResponseBodyAsString());
@@ -115,11 +114,17 @@ public class ExtractionService {
         String fieldList = String.join(", ", fieldNames);
         return "Je bent een documentextractie-assistent. Analyseer het bijgevoegde document en haal de volgende "
                 + "velden eruit: " + fieldList + ". Antwoord ALLEEN met een geldig JSON-object waarbij de sleutels "
-                + "exact deze veldnamen zijn en de waarden de gevonden tekst zijn (of null als het veld niet in het "
-                + "document voorkomt). Geen uitleg, geen markdown-opmaak, alleen het JSON-object.";
+                + "exact deze veldnamen zijn. Elke sleutel wijst naar een object met twee dingen: \"value\" (de "
+                + "gevonden tekst, of null als het veld niet voorkomt) en \"box\" (de locatie van die tekst op de "
+                + "pagina, of null als je dat niet kan bepalen). Een box is een object met \"page\" (paginanummer, "
+                + "beginnend bij 0), \"x\" en \"y\" (linkerbovenhoek van het tekstvak, als fractie 0 tot 1 van de "
+                + "paginabreedte/-hoogte) en \"width\"/\"height\" (afmetingen van het tekstvak, ook als fractie 0 "
+                + "tot 1). Voorbeeld voor een veld \"Gewicht\" met waarde \"2.600 kg\" in de linkerbovenhoek: "
+                + "{\"Gewicht\": {\"value\": \"2.600 kg\", \"box\": {\"page\": 0, \"x\": 0.1, \"y\": 0.2, "
+                + "\"width\": 0.15, \"height\": 0.02}}}. Geen uitleg, geen markdown-opmaak, alleen het JSON-object.";
     }
 
-    private Map<String, String> parseJsonResponse(String rawText) {
+    private Map<String, ExtractedValue> parseJsonResponse(String rawText) {
         String cleaned = rawText.trim();
         if (cleaned.startsWith("```")) {
             int firstNewline = cleaned.indexOf('\n');
@@ -128,12 +133,36 @@ public class ExtractionService {
                 cleaned = cleaned.substring(firstNewline + 1, lastFence).trim();
             }
         }
+        JsonNode root;
         try {
-            return objectMapper.readValue(cleaned, new TypeReference<Map<String, String>>() {
-            });
+            root = objectMapper.readTree(cleaned);
         } catch (Exception e) {
             log.warn("Kon extractie-antwoord niet parsen als JSON: {}", cleaned);
             throw new IllegalStateException("Onverwachte reactie van Gemini ontvangen", e);
         }
+        Map<String, ExtractedValue> result = new LinkedHashMap<>();
+        root.fields().forEachRemaining(entry -> {
+            String fieldName = entry.getKey();
+            JsonNode fieldNode = entry.getValue();
+            // Tolerate a plain string value too, in case the model ignores the {value, box} shape.
+            String value = fieldNode.isObject() ? textOrNull(fieldNode.path("value")) : textOrNull(fieldNode);
+            FieldBox box = null;
+            JsonNode boxNode = fieldNode.path("box");
+            if (boxNode.isObject()) {
+                box = new FieldBox(
+                        boxNode.path("page").asInt(0),
+                        boxNode.path("x").asDouble(),
+                        boxNode.path("y").asDouble(),
+                        boxNode.path("width").asDouble(),
+                        boxNode.path("height").asDouble()
+                );
+            }
+            result.put(fieldName, new ExtractedValue(value, box));
+        });
+        return result;
+    }
+
+    private String textOrNull(JsonNode node) {
+        return node.isMissingNode() || node.isNull() ? null : node.asText();
     }
 }

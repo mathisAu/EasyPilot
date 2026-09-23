@@ -87,6 +87,20 @@ public class DocumentController {
                 .body(summary.content());
     }
 
+    @GetMapping("/api/documents/{id}/redacted")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> downloadRedacted(@PathVariable Long id, Authentication authentication) {
+        AppUser currentUser = currentUserService.require(authentication);
+        DocumentService.RedactedFile file = service.generateRedactedFile(id, currentUser);
+        ContentDisposition contentDisposition = ContentDisposition.attachment()
+                .filename(file.filename(), StandardCharsets.UTF_8)
+                .build();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+                .contentType(MediaType.parseMediaType(file.contentType()))
+                .body(file.content());
+    }
+
     @GetMapping("/api/documents/{id}/extracted-fields")
     @PreAuthorize("hasRole('ADMIN')")
     public List<ExtractedFieldDto> getExtractedFields(@PathVariable Long id) {
