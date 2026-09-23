@@ -1,6 +1,7 @@
 import { ChevronRight, File, FileText, Plus, Sparkles } from 'lucide-react';
 import { StatusPill } from '../components/StatusPill';
 import { toneFor } from '../data';
+import { previewUrl } from '../api/documentTypes';
 import type { DocumentType } from '../types';
 
 interface ClientDocumentsPageProps {
@@ -55,11 +56,18 @@ export function ClientDocumentsPage({ types, loading, onAdd, onView }: ClientDoc
                   </td>
                   <td>{type.provider}</td>
                   <td>
-                    {type.latestDocumentFilename ? (
-                      <span className="document-cell">
+                    {type.latestDocumentFilename && type.latestDocumentId ? (
+                      <a
+                        className="document-cell"
+                        href={previewUrl(type.latestDocumentId)}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(event) => event.stopPropagation()}
+                        title="Document openen"
+                      >
                         <File size={14} />
                         {type.latestDocumentFilename}
-                      </span>
+                      </a>
                     ) : (
                       <span className="document-cell document-cell-empty">—</span>
                     )}

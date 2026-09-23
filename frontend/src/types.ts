@@ -46,6 +46,7 @@ export interface DocumentType {
   status: RequestStatus;
   fieldList: string[];
   latestDocumentFilename?: string | null;
+  latestDocumentId?: number | null;
   organizationId?: number | null;
   organizationName?: string | null;
   createdAt?: string;

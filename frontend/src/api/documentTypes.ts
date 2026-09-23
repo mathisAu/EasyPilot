@@ -9,6 +9,7 @@ interface BackendDocumentTypeDto {
   fields: string[];
   documentCount: number;
   latestDocumentFilename: string | null;
+  latestDocumentId: number | null;
   organizationId: number | null;
   organizationName: string | null;
   createdAt: string;
@@ -72,6 +73,7 @@ function mapType(dto: BackendDocumentTypeDto): DocumentType {
     fieldList: dto.fields,
     examples: dto.documentCount,
     latestDocumentFilename: dto.latestDocumentFilename,
+    latestDocumentId: dto.latestDocumentId,
     organizationId: dto.organizationId,
     organizationName: dto.organizationName,
     createdAt: dto.createdAt,

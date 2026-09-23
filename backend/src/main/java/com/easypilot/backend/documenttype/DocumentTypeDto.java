@@ -15,6 +15,7 @@ public record DocumentTypeDto(
         List<String> fields,
         int documentCount,
         String latestDocumentFilename,
+        Long latestDocumentId,
         Long organizationId,
         String organizationName,
         Instant createdAt,
@@ -22,9 +23,8 @@ public record DocumentTypeDto(
 ) {
 
     public static DocumentTypeDto from(DocumentType entity) {
-        String latestDocumentFilename = entity.getDocuments().stream()
+        Document latestDocument = entity.getDocuments().stream()
                 .max(Comparator.comparing(Document::getUploadedAt))
-                .map(Document::getOriginalFilename)
                 .orElse(null);
         return new DocumentTypeDto(
                 entity.getId(),
@@ -33,7 +33,8 @@ public record DocumentTypeDto(
                 entity.getStatus().name(),
                 new ArrayList<>(entity.getFields()),
                 entity.getDocuments().size(),
-                latestDocumentFilename,
+                latestDocument != null ? latestDocument.getOriginalFilename() : null,
+                latestDocument != null ? latestDocument.getId() : null,
                 entity.getOrganization() != null ? entity.getOrganization().getId() : null,
                 entity.getOrganization() != null ? entity.getOrganization().getName() : null,
                 entity.getCreatedAt(),
