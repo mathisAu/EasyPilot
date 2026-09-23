@@ -27,5 +27,5 @@ export function ticketTurn(
   }
   return supportMustRespond
     ? { label: 'In behandeling bij support', tone: 'blue', description: 'Ons supportteam reageert zo snel mogelijk.' }
-    : { label: 'Wacht op jouw reactie', tone: 'amber', description: 'Support heeft gereageerd. Jij bent aan zet.' };
+    : { label: 'Wacht op jouw reactie', tone: 'amber', description: 'Support heeft gereageerd.' };
 }
