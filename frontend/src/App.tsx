@@ -6,6 +6,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { RequestsPage } from './pages/RequestsPage';
 import { DocumentTypesPage } from './pages/DocumentTypesPage';
 import { OrganizationsPage } from './pages/OrganizationsPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { DocumentTypeDrawer } from './modals/DocumentTypeDrawer';
 import { DocumentTypeFormModal } from './modals/DocumentTypeFormModal';
@@ -167,6 +168,8 @@ function AppShell() {
             onView={setViewingOrganization}
           />
         );
+      case 'Instellingen':
+        return <SettingsPage />;
       case 'Documentaanvragen':
       default:
         return (
