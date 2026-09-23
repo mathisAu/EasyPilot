@@ -1,5 +1,21 @@
 import { useMemo, useState } from 'react';
-import { ChevronRight, File, FileImage, FileText, Folder as FolderIcon, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import {
+  Building2,
+  ChevronRight,
+  File,
+  FileImage,
+  Files,
+  FileText,
+  Folder as FolderIcon,
+  ListChecks,
+  Pencil,
+  Plus,
+  Search,
+  Sparkles,
+  Trash2,
+  X,
+} from 'lucide-react';
+import { Metric } from '../components/Metric';
 import { StatusPill } from '../components/StatusPill';
 import { toneFor } from '../data';
 import { FolderBar } from '../folders/FolderBar';
@@ -98,6 +114,11 @@ export function DocumentTypesPage({ types, onAdd, onView, onEdit, onDelete, onTy
     [types, search, organizationFilter, fileKindFilter, matchesFolder]
   );
 
+  const totalExamples = types.reduce((sum, type) => sum + type.examples, 0);
+  const liveCount = types.filter((type) => type.status === 'Live').length;
+  const filtersActive =
+    search !== '' || organizationFilter !== 'all' || fileKindFilter !== 'all' || folderFilter !== 'all';
+
   return (
     <>
       <section className="page-heading">
@@ -111,7 +132,14 @@ export function DocumentTypesPage({ types, onAdd, onView, onEdit, onDelete, onTy
         </button>
       </section>
 
-      <section className="table-section" style={{ marginTop: 0 }}>
+      <section className="metrics-grid" aria-label="Overzicht documenttypes">
+        <Metric icon={FileText} label="Documenttypes" value={types.length} note="In je werkruimte" />
+        <Metric icon={Building2} label="Klanten" value={organizations.length} note="Met documenttypes" tone="blue" />
+        <Metric icon={Files} label="Voorbeelden" value={totalExamples} note="Geüploade documenten" tone="amber" />
+        <Metric icon={Sparkles} label="Live" value={liveCount} note="Automatisch verwerkt" tone="green" />
+      </section>
+
+      <section className="filter-panel">
         <FolderBar
           types={types}
           folders={folders}
@@ -137,29 +165,7 @@ export function DocumentTypesPage({ types, onAdd, onView, onEdit, onDelete, onTy
         />
         {folderError && <p className="form-error">{folderError}</p>}
 
-        <div className="status-tabs" role="tablist" aria-label="Bestandstype">
-          <button
-            type="button"
-            className={`status-tab ${fileKindFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setFileKindFilter('all')}
-          >
-            Alle bestanden <span>{types.length}</span>
-          </button>
-          {(['pdf', 'jpg', 'png', 'other'] as FileKind[])
-            .filter((kind) => fileKindCounts[kind] > 0)
-            .map((kind) => (
-              <button
-                key={kind}
-                type="button"
-                className={`status-tab ${fileKindFilter === kind ? 'active' : ''}`}
-                onClick={() => setFileKindFilter(kind)}
-              >
-                {FILE_KIND_LABEL[kind]} <span>{fileKindCounts[kind]}</span>
-              </button>
-            ))}
-        </div>
-
-        <div className="table-toolbar">
+        <div className="filter-panel-row">
           <div className="search-field">
             <Search size={17} />
             <input
@@ -190,29 +196,66 @@ export function DocumentTypesPage({ types, onAdd, onView, onEdit, onDelete, onTy
               ))}
             </select>
           )}
+          <select
+            className="filter-select"
+            value={fileKindFilter}
+            onChange={(event) => setFileKindFilter(event.target.value as 'all' | FileKind)}
+            aria-label="Filter op bestandstype"
+          >
+            <option value="all">Alle bestandstypes</option>
+            {(['pdf', 'jpg', 'png', 'other'] as FileKind[])
+              .filter((kind) => fileKindCounts[kind] > 0)
+              .map((kind) => (
+                <option key={kind} value={kind}>
+                  {FILE_KIND_LABEL[kind]} ({fileKindCounts[kind]})
+                </option>
+              ))}
+          </select>
           <span className="result-count">
             {filteredTypes.length} van {types.length} documenttypes
           </span>
+          {filtersActive && (
+            <button
+              type="button"
+              className="text-button filter-reset"
+              onClick={() => {
+                setSearch('');
+                setOrganizationFilter('all');
+                setFileKindFilter('all');
+                setFolderFilter('all');
+              }}
+            >
+              <X size={13} /> Filters wissen
+            </button>
+          )}
         </div>
       </section>
 
-      <section className="type-grid">
+      <section className="type-grid type-grid-compact">
         {filteredTypes.map((item) => {
           const FileKindIcon = FILE_KIND_ICON[fileKindOf(item)];
           return (
-            <article className="type-card" key={item.id}>
-              <div className="type-card-top">
-                <span className="customer-logo">{item.provider[0]}</span>
+            <article className="type-card type-card-compact" key={item.id}>
+              <div className="type-card-head">
+                <span className="customer-logo">{(item.organizationName ?? item.provider).slice(0, 1).toUpperCase()}</span>
+                <div className="type-card-heading">
+                  <h2>
+                    <button
+                      type="button"
+                      className="type-card-title"
+                      onClick={() => onView(item)}
+                      title={`${item.name} openen`}
+                    >
+                      {item.name}
+                    </button>
+                  </h2>
+                  <p>
+                    {item.organizationName ?? 'Intern'} · {item.provider}
+                  </p>
+                </div>
                 <StatusPill tone={toneFor(item.status)}>{item.status}</StatusPill>
               </div>
-              <h2>
-                <button type="button" className="type-card-title" onClick={() => onView(item)} title={`${item.name} openen`}>
-                  {item.name}
-                </button>
-              </h2>
-              <p>
-                {item.organizationName ?? 'Intern'} · {item.provider}
-              </p>
+
               <div className="type-card-tags">
                 <span className="field-chip">
                   <FileKindIcon size={12} /> {FILE_KIND_LABEL[fileKindOf(item)]}
@@ -223,24 +266,33 @@ export function DocumentTypesPage({ types, onAdd, onView, onEdit, onDelete, onTy
                   </span>
                 )}
               </div>
-              <div className="type-stats">
+
+              <div className="type-card-facts">
                 <span>
-                  <strong>{item.examples}</strong> voorbeelden
+                  <Files size={13} /> {item.examples} {item.examples === 1 ? 'voorbeeld' : 'voorbeelden'}
                 </span>
                 <span>
-                  <strong>{item.fieldList.length}</strong> velden
+                  <ListChecks size={13} /> {item.fieldList.length} {item.fieldList.length === 1 ? 'veld' : 'velden'}
                 </span>
               </div>
-              <div className="type-card-actions">
+
+              <div className="type-card-footer">
                 <button className="text-button" onClick={() => onView(item)}>
-                  Openen <ChevronRight size={16} />
+                  Openen <ChevronRight size={15} />
                 </button>
-                <button className="row-action" onClick={() => onEdit(item)} aria-label={`Bewerk ${item.name}`} title="Bewerken">
-                  <Pencil size={16} />
-                </button>
-                <button className="row-action" onClick={() => onDelete(item.id)} aria-label={`Verwijder ${item.name}`} title="Verwijderen">
-                  <Trash2 size={16} />
-                </button>
+                <div className="type-card-icons">
+                  <button className="row-action" onClick={() => onEdit(item)} aria-label={`Bewerk ${item.name}`} title="Bewerken">
+                    <Pencil size={15} />
+                  </button>
+                  <button
+                    className="row-action row-action-danger"
+                    onClick={() => onDelete(item.id)}
+                    aria-label={`Verwijder ${item.name}`}
+                    title="Verwijderen"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
               </div>
             </article>
           );
