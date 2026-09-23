@@ -196,7 +196,12 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged, on
                 {selectedDoc.contentType.startsWith('image/') ? (
                   <img src={previewUrl(selectedDoc.id)} alt={selectedDoc.filename} />
                 ) : (
-                  <embed src={previewUrl(selectedDoc.id)} type={selectedDoc.contentType} />
+                  // The fragment suppresses the browser PDF viewer's own dark toolbar
+                  // and thumbnail sidebar, which otherwise clash with the app's design.
+                  <embed
+                    src={`${previewUrl(selectedDoc.id)}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+                    type={selectedDoc.contentType}
+                  />
                 )}
               </div>
               <div className="review-card-footer">
