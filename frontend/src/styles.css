@@ -326,3 +326,13 @@ button.sidebar-footer:hover { background: #18355a; }
 .notification-item p { margin: 0; color: #6d89a2; font-size: 12px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .notification-item small { color: #9aabbd; font-size: 10px; }
 @media (max-width: 460px) { .notification-panel { position: fixed; top: 62px; left: 12px; right: 12px; width: auto; } }
+
+.status-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 0; }
+.status-tab { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; color: #5d7189; border: 1px solid #e2e9f0; border-radius: 20px; background: #fff; font-size: 12px; font-weight: 600; transition: border-color .15s ease, color .15s ease, background .15s ease; }
+.status-tab:hover { border-color: #9dcdec; color: #1689e6; }
+.status-tab span { padding: 1px 6px; color: #7890a5; border-radius: 10px; background: #eef2f6; font-size: 11px; font-weight: 700; }
+.status-tab.active { color: #fff; border-color: #1689e6; background: #1689e6; }
+.status-tab.active span { color: #fff; background: #0c75ca; }
+.filter-select { padding: 9px 12px; color: #48617c; border: 1px solid #dbe4ed; border-radius: 7px; background: #fff; font-size: 12px; font-weight: 600; }
+.type-card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.type-card-tags .field-chip { display: inline-flex; align-items: center; gap: 4px; }

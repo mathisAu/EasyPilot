@@ -1,28 +1,13 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import {
-  Eye,
-  FileCheck2,
-  FileText,
-  Folder as FolderIcon,
-  FolderInput,
-  FolderMinus,
-  FolderPlus,
-  FolderSymlink,
-  Search,
-  Sparkles,
-  SlidersHorizontal,
-  Trash2,
-  X,
-} from 'lucide-react';
+import { useMemo } from 'react';
+import { Eye, FileCheck2, FileText, Folder as FolderIcon, FolderMinus, FolderSymlink, Search, Sparkles, SlidersHorizontal, Trash2, X } from 'lucide-react';
 import { Metric } from '../components/Metric';
 import { StatusPill } from '../components/StatusPill';
 import { stages, toneFor } from '../data';
-import { ApiError } from '../api/client';
-import { createFolder, deleteFolder, listFolders } from '../api/folders';
-import { moveDocumentTypeToFolder } from '../api/documentTypes';
 import { AddToFolderModal } from '../modals/AddToFolderModal';
 import { FoldersModal } from '../modals/FoldersModal';
-import type { DocumentType, Folder, RequestStatus } from '../types';
+import { FolderBar } from '../folders/FolderBar';
+import { useFolderManagement } from '../folders/useFolderManagement';
+import type { DocumentType, RequestStatus } from '../types';
 
 interface RequestsPageProps {
   types: DocumentType[];
@@ -34,8 +19,6 @@ interface RequestsPageProps {
   onDeleteType: (id: number) => void;
   onTypeUpdated: (type: DocumentType) => void;
 }
-
-type FolderFilter = 'all' | 'none' | number;
 
 function formatDate(value?: string): string {
   if (!value) return '—';
@@ -52,20 +35,29 @@ export function RequestsPage({
   onDeleteType,
   onTypeUpdated,
 }: RequestsPageProps) {
-  const [folders, setFolders] = useState<Folder[]>([]);
-  const [folderFilter, setFolderFilter] = useState<FolderFilter>('all');
-  const [creatingFolder, setCreatingFolder] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
-  const [folderError, setFolderError] = useState('');
-  const [showPicker, setShowPicker] = useState(false);
-  const [showFolders, setShowFolders] = useState(false);
-  const [movingType, setMovingType] = useState<DocumentType | null>(null);
-
-  useEffect(() => {
-    listFolders()
-      .then(setFolders)
-      .catch((err) => setFolderError(err instanceof ApiError ? err.message : 'Kon mappen niet laden.'));
-  }, []);
+  const folderMgmt = useFolderManagement(types, onTypeUpdated);
+  const {
+    folders,
+    folderFilter,
+    setFolderFilter,
+    creatingFolder,
+    setCreatingFolder,
+    newFolderName,
+    setNewFolderName,
+    folderError,
+    showPicker,
+    setShowPicker,
+    showFolders,
+    setShowFolders,
+    movingType,
+    setMovingType,
+    activeFolder,
+    matchesFolder,
+    handleCreateFolder,
+    handleDeleteFolder,
+    handleMoveToFolder,
+    handleRemoveFromFolder,
+  } = folderMgmt;
 
   const filteredTypes = useMemo(
     () =>
@@ -74,12 +66,8 @@ export function RequestsPage({
           `${type.organizationName ?? ''} ${type.provider} ${type.name}`.toLowerCase().includes(search.toLowerCase())
         )
         .filter((type) => !statusFilter || type.status === statusFilter)
-        .filter((type) => {
-          if (folderFilter === 'all') return true;
-          if (folderFilter === 'none') return !type.folderId;
-          return type.folderId === folderFilter;
-        }),
-    [types, search, statusFilter, folderFilter]
+        .filter(matchesFolder),
+    [types, search, statusFilter, matchesFolder]
   );
 
   const inBehandeling = types.filter((type) =>
@@ -87,59 +75,6 @@ export function RequestsPage({
   ).length;
   const goedgekeurd = types.filter((type) => type.status === 'Goedgekeurd').length;
   const live = types.filter((type) => type.status === 'Live').length;
-
-  async function handleCreateFolder(event: FormEvent) {
-    event.preventDefault();
-    const name = newFolderName.trim();
-    if (!name) return;
-    setFolderError('');
-    try {
-      const folder = await createFolder(name);
-      setFolders((current) => [...current, folder].sort((a, b) => a.name.localeCompare(b.name, 'nl')));
-      setNewFolderName('');
-      setCreatingFolder(false);
-      setFolderFilter(folder.id);
-      setShowPicker(true);
-    } catch (err) {
-      setFolderError(err instanceof ApiError ? err.message : 'Map aanmaken is niet gelukt.');
-    }
-  }
-
-  async function handleDeleteFolder(folder: Folder) {
-    if (!window.confirm(`Map "${folder.name}" verwijderen? De documenttypes erin blijven gewoon bestaan.`)) return;
-    setFolderError('');
-    try {
-      await deleteFolder(folder.id);
-      setFolders((current) => current.filter((item) => item.id !== folder.id));
-      types
-        .filter((type) => type.folderId === folder.id)
-        .forEach((type) => onTypeUpdated({ ...type, folderId: null, folderName: null }));
-      setFolderFilter('all');
-    } catch (err) {
-      setFolderError(err instanceof ApiError ? err.message : 'Map verwijderen is niet gelukt.');
-    }
-  }
-
-  async function handleMoveToFolder(type: DocumentType, target: Folder) {
-    setFolderError('');
-    setMovingType(null);
-    try {
-      onTypeUpdated(await moveDocumentTypeToFolder(type.id, target.id));
-    } catch (err) {
-      setFolderError(err instanceof ApiError ? err.message : 'Verplaatsen is niet gelukt.');
-    }
-  }
-
-  async function handleRemoveFromFolder(type: DocumentType) {
-    setFolderError('');
-    try {
-      onTypeUpdated(await moveDocumentTypeToFolder(type.id, null));
-    } catch (err) {
-      setFolderError(err instanceof ApiError ? err.message : 'Uit de map halen is niet gelukt.');
-    }
-  }
-
-  const activeFolder = typeof folderFilter === 'number' ? folders.find((folder) => folder.id === folderFilter) : null;
 
   return (
     <>
@@ -190,7 +125,7 @@ export function RequestsPage({
         <div className="section-title">
           <div>
             <p className="eyebrow">Overzicht aanvragen</p>
-            <h2>Recente documentaanvragen</h2>
+            <h2>Documentaanvragen</h2>
           </div>
           <button
             className={`filter-button ${statusFilter ? 'filter-button-active' : ''}`}
@@ -200,76 +135,29 @@ export function RequestsPage({
           </button>
         </div>
 
-        <div className="folder-bar" role="tablist" aria-label="Mappen">
-          <button
-            type="button"
-            className={`folder-chip ${folderFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setFolderFilter('all')}
-          >
-            Alle <span>{types.length}</span>
-          </button>
-          <button
-            type="button"
-            className={`folder-chip ${folderFilter === 'none' ? 'active' : ''}`}
-            onClick={() => setFolderFilter('none')}
-          >
-            Zonder map <span>{types.filter((type) => !type.folderId).length}</span>
-          </button>
-          <button
-            type="button"
-            className={`folder-chip ${activeFolder ? 'active' : ''}`}
-            onClick={() => setShowFolders(true)}
-            aria-haspopup="dialog"
-          >
-            <FolderIcon size={13} /> {activeFolder ? activeFolder.name : 'Mappen'}{' '}
-            <span>
-              {activeFolder ? types.filter((type) => type.folderId === activeFolder.id).length : folders.length}
-            </span>
-          </button>
-          {creatingFolder ? (
-            <form className="folder-new-form" onSubmit={handleCreateFolder}>
-              <input
-                value={newFolderName}
-                onChange={(event) => setNewFolderName(event.target.value)}
-                placeholder="Naam van de map"
-                maxLength={60}
-                autoFocus
-              />
-              <button type="submit" className="folder-chip active" disabled={!newFolderName.trim()}>
-                Aanmaken
-              </button>
-              <button
-                type="button"
-                className="folder-chip"
-                onClick={() => {
-                  setCreatingFolder(false);
-                  setNewFolderName('');
-                }}
-              >
-                Annuleren
-              </button>
-            </form>
-          ) : (
-            <button type="button" className="folder-chip folder-chip-new" onClick={() => setCreatingFolder(true)}>
-              <FolderPlus size={13} /> Nieuwe map
-            </button>
-          )}
-          {activeFolder && (
-            <div className="folder-bar-actions">
-              <button type="button" className="primary-button folder-add-button" onClick={() => setShowPicker(true)}>
-                <FolderInput size={15} /> Aanvragen toevoegen
-              </button>
-              <button
-                type="button"
-                className="folder-delete"
-                onClick={() => handleDeleteFolder(activeFolder)}
-                title={`Map "${activeFolder.name}" verwijderen`}
-              >
-                <Trash2 size={13} /> Map verwijderen
-              </button>
-            </div>
-          )}
-        </div>
+        <FolderBar
+          types={types}
+          folders={folders}
+          folderFilter={folderFilter}
+          activeFolder={activeFolder}
+          creatingFolder={creatingFolder}
+          newFolderName={newFolderName}
+          itemLabel="Aanvragen"
+          onSelectFilter={setFolderFilter}
+          onOpenFolders={() => setShowFolders(true)}
+          onStartCreating={() => setCreatingFolder(true)}
+          onCancelCreating={() => {
+            setCreatingFolder(false);
+            setNewFolderName('');
+          }}
+          onNewFolderNameChange={setNewFolderName}
+          onCreateFolder={(event) => {
+            event.preventDefault();
+            handleCreateFolder(newFolderName);
+          }}
+          onOpenAddPicker={() => setShowPicker(true)}
+          onDeleteFolder={handleDeleteFolder}
+        />
         {folderError && <p className="form-error">{folderError}</p>}
 
         <div className="table-toolbar">
@@ -286,11 +174,6 @@ export function RequestsPage({
               </button>
             )}
           </div>
-          {statusFilter && (
-            <button className="active-filter-chip" onClick={() => onToggleStatusFilter(statusFilter)}>
-              {statusFilter} <X size={13} />
-            </button>
-          )}
           <span className="result-count">
             {filteredTypes.length} van {types.length} aanvragen
           </span>
