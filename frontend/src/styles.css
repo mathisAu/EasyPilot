@@ -159,6 +159,9 @@ button { cursor: pointer; }
 .review-card-header span:first-child { display: inline-flex; align-items: center; gap: 6px; }
 .review-card-header a { display: grid; place-items: center; padding: 4px; color: #71829a; border-radius: 5px; }
 .review-card-header a:hover { color: #1687e5; background: #eef6fd; }
+.review-card-actions { display: inline-flex; align-items: center; gap: 4px; }
+.review-delete-button { display: grid; place-items: center; padding: 4px; color: #71829a; border: 0; border-radius: 5px; background: transparent; }
+.review-delete-button:hover { color: #d5573b; background: #fdeeea; }
 .review-preview-card .review-preview {
   display: flex;
   flex: 1;

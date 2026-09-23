@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Check, Download, FileText, Loader2, RefreshCw, Save, X } from 'lucide-react';
+import { Check, Download, FileText, Loader2, RefreshCw, Save, Trash2, X } from 'lucide-react';
 import {
+  deleteDocument,
   getExtractedFields,
   listDocuments,
   previewUrl,
@@ -20,6 +21,7 @@ interface DocumentReviewModalProps {
   onClose: () => void;
   onStatusChanged: (updated: DocumentType) => void;
   onFieldsSaved: () => void;
+  onDocumentCountChange: (typeId: number, count: number) => void;
 }
 
 function formatFileSize(bytes: number): string {
@@ -28,7 +30,13 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function DocumentReviewModal({ documentType, onClose, onStatusChanged, onFieldsSaved }: DocumentReviewModalProps) {
+export function DocumentReviewModal({
+  documentType,
+  onClose,
+  onStatusChanged,
+  onFieldsSaved,
+  onDocumentCountChange,
+}: DocumentReviewModalProps) {
   const [documents, setDocuments] = useState<DocumentFile[]>([]);
   const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
   const [fields, setFields] = useState<ExtractedField[]>([]);
@@ -38,6 +46,7 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged, on
   const [loadingFields, setLoadingFields] = useState(false);
   const [savingFields, setSavingFields] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [status, setStatus] = useState<RequestStatus>(documentType.status);
   const [savingStatus, setSavingStatus] = useState(false);
   const [error, setError] = useState('');
@@ -131,6 +140,25 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged, on
     }
   }
 
+  async function handleDeleteDocument() {
+    if (!selectedDoc) return;
+    if (!window.confirm(`Weet je zeker dat je "${selectedDoc.filename}" wilt verwijderen?`)) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await deleteDocument(selectedDoc.id);
+      const remaining = documents.filter((doc) => doc.id !== selectedDoc.id);
+      setDocuments(remaining);
+      setSelectedDocId(remaining.length > 0 ? remaining[0].id : null);
+      setFields([]);
+      onDocumentCountChange(documentType.id, remaining.length);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Verwijderen is niet gelukt.');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   async function handleUpdateStatus() {
     setSavingStatus(true);
     setError('');
@@ -188,9 +216,21 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged, on
                 <span>
                   <FileText size={14} /> Origineel document ({fileKind})
                 </span>
-                <a href={previewUrl(selectedDoc.id)} target="_blank" rel="noreferrer" title="Downloaden" aria-label="Document downloaden">
-                  <Download size={14} />
-                </a>
+                <span className="review-card-actions">
+                  <a href={previewUrl(selectedDoc.id)} target="_blank" rel="noreferrer" title="Downloaden" aria-label="Document downloaden">
+                    <Download size={14} />
+                  </a>
+                  <button
+                    type="button"
+                    className="review-delete-button"
+                    onClick={handleDeleteDocument}
+                    disabled={deleting}
+                    title="Document verwijderen"
+                    aria-label="Document verwijderen"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </span>
               </div>
               <div className="review-preview">
                 {selectedDoc.contentType.startsWith('image/') ? (

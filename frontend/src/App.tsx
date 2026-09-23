@@ -149,6 +149,7 @@ function AppShell() {
   function handleDocumentCountChange(typeId: number, count: number) {
     setDocumentTypes((current) => current.map((type) => (type.id === typeId ? { ...type, examples: count } : type)));
     setViewingType((current) => (current && current.id === typeId ? { ...current, examples: count } : current));
+    setReviewingType((current) => (current && current.id === typeId ? { ...current, examples: count } : current));
   }
 
   function handleToggleStatusFilter(label: RequestStatus) {
@@ -243,6 +244,7 @@ function AppShell() {
           onClose={() => setReviewingType(null)}
           onStatusChanged={handleStatusChanged}
           onFieldsSaved={() => notify('Gegevens opgeslagen')}
+          onDocumentCountChange={handleDocumentCountChange}
         />
       )}
       {viewingOrganization && (
