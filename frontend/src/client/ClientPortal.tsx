@@ -44,6 +44,19 @@ export function ClientPortal() {
       .finally(() => setLoadingOrganization(false));
   }, []);
 
+  // Auto-refresh: laat de status/voortgang live bijwerken zonder handmatig herladen.
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      listDocumentTypes()
+        .then((result) => {
+          setDocumentTypes(result);
+          setViewingType((current) => (current ? result.find((type) => type.id === current.id) ?? current : current));
+        })
+        .catch(() => {});
+    }, 8000);
+    return () => window.clearInterval(interval);
+  }, []);
+
   function navigate(page: ClientPageKey) {
     setActive(page);
     setMobileOpen(false);

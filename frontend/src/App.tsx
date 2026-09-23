@@ -83,6 +83,20 @@ function AppShell() {
       .catch((err) => notify(err instanceof ApiError ? err.message : 'Kon organisaties niet laden.'));
   }, []);
 
+  // Auto-refresh: pick up new klant-aanvragen / status- en extractie-updates without a manual reload.
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      listDocumentTypes()
+        .then((result) => {
+          setDocumentTypes(result);
+          setViewingType((current) => (current ? result.find((type) => type.id === current.id) ?? current : current));
+          setReviewingType((current) => (current ? result.find((type) => type.id === current.id) ?? current : current));
+        })
+        .catch(() => {});
+    }, 8000);
+    return () => window.clearInterval(interval);
+  }, []);
+
   function navigate(page: PageKey) {
     setActive(page);
     setMobileOpen(false);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, RefreshCw, Save, X } from 'lucide-react';
+import { Check, Download, FileText, Loader2, RefreshCw, Save, X } from 'lucide-react';
 import {
   getExtractedFields,
   listDocuments,
@@ -9,13 +9,20 @@ import {
   updateExtractedFields,
 } from '../api/documentTypes';
 import { ApiError } from '../api/client';
-import { STAGE_ORDER } from '../data';
+import { STAGE_ORDER, toneFor } from '../data';
+import { StatusPill } from '../components/StatusPill';
 import type { DocumentFile, DocumentType, ExtractedField, RequestStatus } from '../types';
 
 interface DocumentReviewModalProps {
   documentType: DocumentType;
   onClose: () => void;
   onStatusChanged: (updated: DocumentType) => void;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: DocumentReviewModalProps) {
@@ -37,11 +44,18 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
     listDocuments(documentType.id)
       .then((result) => {
         setDocuments(result);
-        if (result.length > 0) setSelectedDocId(result[0].id);
+        setSelectedDocId((current) => {
+          if (current !== null && result.some((doc) => doc.id === current)) return current;
+          return result.length > 0 ? result[0].id : null;
+        });
       })
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Kon documenten niet laden.'))
       .finally(() => setLoading(false));
   }, [documentType.id]);
+
+  useEffect(() => {
+    setStatus(documentType.status);
+  }, [documentType.status]);
 
   useEffect(() => {
     if (selectedDocId === null) return;
@@ -108,15 +122,22 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
     }
   }
 
+  const fileKind = selectedDoc?.contentType.startsWith('image/') ? 'afbeelding' : 'PDF';
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal review-modal" onClick={(event) => event.stopPropagation()}>
         <button type="button" className="modal-close" onClick={onClose} aria-label="Sluiten">
           <X size={18} />
         </button>
-        <p className="eyebrow">{documentType.provider}</p>
-        <h2>{documentType.name}</h2>
-        <p className="modal-description">Document inleren en beoordelen</p>
+        <div className="review-header">
+          <div>
+            <p className="eyebrow">{documentType.provider}</p>
+            <h2>{documentType.name}</h2>
+            <p className="modal-description">Document inleren en beoordelen</p>
+          </div>
+          <StatusPill tone={toneFor(documentType.status)}>{documentType.status}</StatusPill>
+        </div>
 
         {documents.length > 1 && (
           <div className="custom-field-input">
@@ -132,88 +153,126 @@ export function DocumentReviewModal({ documentType, onClose, onStatusChanged }: 
 
         {error && <p className="form-error">{error}</p>}
 
+        {loading && (
+          <p className="modal-description review-loading">
+            <Loader2 size={14} className="spin" /> Bezig met laden...
+          </p>
+        )}
+
         {!loading && selectedDoc && (
           <div className="review-layout">
-            <div className="review-preview">
-              {selectedDoc.contentType.startsWith('image/') ? (
-                <img src={previewUrl(selectedDoc.id)} alt={selectedDoc.filename} />
-              ) : (
-                <embed src={previewUrl(selectedDoc.id)} type={selectedDoc.contentType} />
-              )}
+            <div className="review-card review-preview-card">
+              <div className="review-card-header">
+                <span>
+                  <FileText size={14} /> Origineel document ({fileKind})
+                </span>
+                <a href={previewUrl(selectedDoc.id)} target="_blank" rel="noreferrer" title="Downloaden" aria-label="Document downloaden">
+                  <Download size={14} />
+                </a>
+              </div>
+              <div className="review-preview">
+                {selectedDoc.contentType.startsWith('image/') ? (
+                  <img src={previewUrl(selectedDoc.id)} alt={selectedDoc.filename} />
+                ) : (
+                  <embed src={previewUrl(selectedDoc.id)} type={selectedDoc.contentType} />
+                )}
+              </div>
+              <div className="review-card-footer">
+                <span className="file-name">{selectedDoc.filename}</span>
+                <span className="file-size">{formatFileSize(selectedDoc.sizeBytes)}</span>
+              </div>
             </div>
 
-            <div className="review-fields">
-              <h3 className="drawer-subheading">Uitgelezen gegevens</h3>
+            <div className="review-card review-fields-card">
+              <div className="review-card-header">
+                <span>Uitgelezen gegevens</span>
+                {selectedDoc.extractionStatus === 'DONE' && (
+                  <span className="extraction-done-badge">
+                    <Check size={12} /> Uitgelezen
+                  </span>
+                )}
+              </div>
 
-              {selectedDoc.extractionStatus === 'IN_PROGRESS' && <p className="modal-description">Extractie is bezig...</p>}
-              {selectedDoc.extractionStatus === 'FAILED' && (
-                <div className="info-callout">
-                  <div>
-                    <strong>Extractie mislukt</strong>
-                    <p>{selectedDoc.extractionError ?? 'Onbekende fout'}</p>
-                  </div>
-                  <button type="button" className="secondary-button" onClick={handleRetryExtraction} disabled={retrying}>
-                    <RefreshCw size={14} /> {retrying ? 'Bezig...' : 'Opnieuw proberen'}
-                  </button>
-                </div>
-              )}
-
-              {!loadingFields && fields.length > 0 && (
-                <>
-                  {fields.map((field) => (
-                    <div className="review-field-row" key={field.fieldName}>
-                      <label>
-                        {field.fieldName}
-                        <input
-                          value={values[field.fieldName] ?? ''}
-                          onChange={(event) => {
-                            const nextValue = event.target.value;
-                            setValues((current) => ({ ...current, [field.fieldName]: nextValue }));
-                          }}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        className={`field-confirm-toggle ${confirmed[field.fieldName] ? 'confirmed' : ''}`}
-                        onClick={() =>
-                          setConfirmed((current) => ({ ...current, [field.fieldName]: !current[field.fieldName] }))
-                        }
-                        aria-pressed={Boolean(confirmed[field.fieldName])}
-                        aria-label={`${field.fieldName} ${confirmed[field.fieldName] ? 'bevestigd' : 'niet bevestigd'}`}
-                        title="Bevestig dit veld"
-                      >
-                        <Check size={14} />
-                      </button>
+              <div className="review-fields">
+                {selectedDoc.extractionStatus === 'IN_PROGRESS' && (
+                  <p className="modal-description review-loading">
+                    <Loader2 size={14} className="spin" /> Extractie is bezig...
+                  </p>
+                )}
+                {selectedDoc.extractionStatus === 'FAILED' && (
+                  <div className="info-callout">
+                    <div>
+                      <strong>Extractie mislukt</strong>
+                      <p>{selectedDoc.extractionError ?? 'Onbekende fout'}</p>
                     </div>
-                  ))}
-                  <button type="button" className="primary-button" onClick={handleSaveFields} disabled={savingFields}>
-                    <Save size={16} /> {savingFields ? 'Bezig...' : 'Opslaan'}
-                  </button>
-                </>
-              )}
+                    <button type="button" className="secondary-button" onClick={handleRetryExtraction} disabled={retrying}>
+                      <RefreshCw size={14} /> {retrying ? 'Bezig...' : 'Opnieuw proberen'}
+                    </button>
+                  </div>
+                )}
 
-              {!loadingFields && fields.length === 0 && selectedDoc.extractionStatus === 'DONE' && (
-                <p className="modal-description">Geen velden gevonden.</p>
-              )}
+                {!loadingFields && fields.length > 0 && (
+                  <>
+                    {fields.map((field) => (
+                      <div className="review-field-row" key={field.fieldName}>
+                        <label>
+                          {field.fieldName}
+                          <input
+                            value={values[field.fieldName] ?? ''}
+                            onChange={(event) => {
+                              const nextValue = event.target.value;
+                              setValues((current) => ({ ...current, [field.fieldName]: nextValue }));
+                            }}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          className={`field-confirm-toggle ${confirmed[field.fieldName] ? 'confirmed' : ''}`}
+                          onClick={() =>
+                            setConfirmed((current) => ({ ...current, [field.fieldName]: !current[field.fieldName] }))
+                          }
+                          aria-pressed={Boolean(confirmed[field.fieldName])}
+                          aria-label={`${field.fieldName} ${confirmed[field.fieldName] ? 'bevestigd' : 'niet bevestigd'}`}
+                          title="Bevestig dit veld"
+                        >
+                          <Check size={14} />
+                        </button>
+                      </div>
+                    ))}
+                    <button type="button" className="primary-button review-save-button" onClick={handleSaveFields} disabled={savingFields}>
+                      <Save size={16} /> {savingFields ? 'Bezig...' : 'Opslaan'}
+                    </button>
+                  </>
+                )}
 
-              <h3 className="drawer-subheading">Status</h3>
-              <div className="custom-field-input">
-                <select value={status} onChange={(event) => setStatus(event.target.value as RequestStatus)}>
-                  {STAGE_ORDER.map((label) => (
-                    <option key={label} value={label}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-                <button type="button" className="secondary-button" onClick={handleUpdateStatus} disabled={savingStatus}>
-                  {savingStatus ? 'Bezig...' : 'Status bijwerken'}
-                </button>
+                {!loadingFields && fields.length === 0 && selectedDoc.extractionStatus === 'DONE' && (
+                  <p className="modal-description">Geen velden gevonden.</p>
+                )}
               </div>
             </div>
           </div>
         )}
 
         {!loading && documents.length === 0 && <p className="modal-description">Nog geen documenten geüpload.</p>}
+
+        <div className="review-status-footer">
+          <div>
+            <strong>Status van dit documenttype</strong>
+            <small>Verplaats de aanvraag naar de volgende fase van de workflow.</small>
+          </div>
+          <div className="review-status-controls">
+            <select value={status} onChange={(event) => setStatus(event.target.value as RequestStatus)}>
+              {STAGE_ORDER.map((label) => (
+                <option key={label} value={label}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <button type="button" className="secondary-button" onClick={handleUpdateStatus} disabled={savingStatus}>
+              {savingStatus ? 'Bezig...' : 'Status bijwerken'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
