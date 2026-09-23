@@ -5,6 +5,7 @@ import { ClientTypeDrawer } from './ClientTypeDrawer';
 import { ClientTypeWizard } from './ClientTypeWizard';
 import { MyOrganizationPage } from './MyOrganizationPage';
 import { HelpPage } from './HelpPage';
+import { SettingsPage } from '../pages/SettingsPage';
 import type { ClientPageKey } from './types';
 import { Topbar } from '../components/Topbar';
 import { Toast } from '../components/Toast';
@@ -78,6 +79,8 @@ export function ClientPortal() {
     switch (active) {
       case 'Mijn organisatie':
         return <MyOrganizationPage organization={organization} loading={loadingOrganization} />;
+      case 'Instellingen':
+        return <SettingsPage />;
       case 'Hulp':
         return <HelpPage />;
       case 'Documenten':

@@ -1,1 +1,1 @@
-export type ClientPageKey = 'Documenten' | 'Mijn organisatie' | 'Hulp';
+export type ClientPageKey = 'Documenten' | 'Mijn organisatie' | 'Instellingen' | 'Hulp';
