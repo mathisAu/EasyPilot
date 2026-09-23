@@ -1,9 +1,11 @@
 export class ApiError extends Error {
   status: number;
+  retryAfterSeconds?: number;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, retryAfterSeconds?: number) {
     super(message);
     this.status = status;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
@@ -47,7 +49,9 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   const data = isJson ? await response.json() : undefined;
 
   if (!response.ok) {
-    throw new ApiError(response.status, data?.message ?? `Er ging iets mis (${response.status})`);
+    const retryAfterHeader = response.headers.get('Retry-After');
+    const retryAfterSeconds = retryAfterHeader ? Number(retryAfterHeader) : undefined;
+    throw new ApiError(response.status, data?.message ?? `Er ging iets mis (${response.status})`, retryAfterSeconds);
   }
 
   return data as T;

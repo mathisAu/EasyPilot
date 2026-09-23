@@ -11,7 +11,13 @@ export type RequestStatus =
   | 'Goedgekeurd'
   | 'Live';
 
-export type PageKey = 'Dashboard' | 'Documentaanvragen' | 'Documenttypes' | 'Organisaties' | 'Instellingen';
+export type PageKey =
+  | 'Dashboard'
+  | 'Documentaanvragen'
+  | 'Documenttypes'
+  | 'Organisaties'
+  | 'Instellingen'
+  | 'Help & support';
 
 export interface UploadedFile {
   id: string;
@@ -79,4 +85,39 @@ export interface WizardFormData {
   files: UploadedFile[];
   selectedFields: Record<string, boolean>;
   customFields: string[];
+}
+
+export type TicketStatus = 'OPEN' | 'CLOSED';
+
+export interface TicketMessage {
+  id: number;
+  authorName: string;
+  authorRole: 'ADMIN' | 'CUSTOMER';
+  body: string;
+  edited: boolean;
+  mine: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface TicketSummary {
+  id: number;
+  subject: string;
+  status: TicketStatus;
+  organizationName: string | null;
+  createdByName: string;
+  messageCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TicketDetail {
+  id: number;
+  subject: string;
+  status: TicketStatus;
+  organizationName: string | null;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+  messages: TicketMessage[];
 }

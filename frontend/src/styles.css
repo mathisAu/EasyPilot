@@ -180,3 +180,37 @@ button.sidebar-footer:hover { background: #18355a; }
 .settings-status-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .settings-qr-box { display: grid; place-items: center; padding: 20px; margin-top: 18px; border: 1px solid #e2e9f0; border-radius: 9px; background: #f8fafc; }
 .settings-secret { margin-top: 12px; padding: 10px 12px; color: #2c4564; border: 1px dashed #dce5ee; border-radius: 7px; background: #f8fafc; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 13px; text-align: center; letter-spacing: 1px; word-break: break-all; }
+
+@keyframes message-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes ticket-row-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.ticket-list { display: grid; gap: 12px; margin-top: 20px; }
+.ticket-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px; border: 1px solid #e2e9f0; border-radius: 9px; background: #fff; text-align: left; cursor: pointer; animation: ticket-row-in .22s ease backwards; }
+.ticket-row:hover { border-color: #9dcdec; transform: translateY(-2px); box-shadow: 0 10px 24px #1028490f; }
+.ticket-row-icon { display: grid; place-items: center; flex: 0 0 auto; width: 38px; height: 38px; border-radius: 9px; color: #1689e6; background: #eaf6ff; }
+.ticket-row-icon.closed { color: #667c94; background: #eef2f6; }
+.ticket-row > div { flex: 1; display: grid; gap: 4px; min-width: 0; }
+.ticket-row strong { color: #294766; font-size: 13px; }
+.ticket-row small { color: #8192a3; font-size: 11px; }
+.ticket-drawer-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 4px; }
+.ticket-thread { display: grid; gap: 12px; margin-top: 20px; max-height: 46vh; overflow-y: auto; padding-right: 6px; }
+.ticket-message { max-width: 86%; padding: 12px 14px; border-radius: 12px; background: #f4f7fa; animation: message-in .22s ease backwards; }
+.ticket-message.mine { justify-self: end; background: #eaf4ff; border: 1px solid #d3e9fb; }
+.ticket-message-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 11px; font-weight: 700; color: #5d7189; }
+.ticket-message-meta .role-admin { color: #1689e6; }
+.ticket-message-meta .role-customer { color: #29956b; }
+.ticket-message-edited { color: #9aabbd; font-size: 10px; font-weight: 500; }
+.ticket-message-body { margin: 0; color: #2c4564; font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+.ticket-message-actions { display: flex; gap: 6px; margin-top: 8px; }
+.ticket-message-actions button { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; color: #8496ac; border: 0; border-radius: 6px; background: transparent; transition: background .15s ease, color .15s ease; }
+.ticket-message-actions button:hover:not(:disabled) { color: #1689e6; background: #e2f0fc; }
+.ticket-message-actions button.delete-action:hover:not(:disabled) { color: #d5573b; background: #fdeae5; }
+.ticket-message-actions button:disabled { opacity: .5; cursor: default; }
+.ticket-message textarea { width: 100%; margin-top: 4px; padding: 8px 10px; color: #2c4564; border: 1px solid #dce5ee; border-radius: 7px; outline: 0; font: inherit; font-size: 13px; resize: vertical; }
+.ticket-message textarea:focus { border-color: #68b3e9; box-shadow: 0 0 0 3px #1689e614; }
+.ticket-reply-form { display: flex; align-items: flex-end; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #edf1f5; }
+.ticket-reply-form textarea { flex: 1; min-height: 42px; max-height: 140px; padding: 10px 12px; color: #2c4564; border: 1px solid #dce5ee; border-radius: 8px; outline: 0; font: inherit; font-size: 13px; resize: vertical; }
+.ticket-reply-form textarea:focus { border-color: #68b3e9; box-shadow: 0 0 0 3px #1689e614; }
+.ticket-reply-form .primary-button { flex: 0 0 auto; min-width: 52px; }
+.modal textarea { width: 100%; padding: 11px 12px; color: #2c4564; border: 1px solid #dce5ee; border-radius: 7px; outline: 0; background: #fff; font: inherit; font-size: 13px; resize: vertical; }
+.modal textarea:focus { border-color: #68b3e9; box-shadow: 0 0 0 3px #1689e614; }
+@media (max-width: 460px) { .ticket-message { max-width: 100%; } }

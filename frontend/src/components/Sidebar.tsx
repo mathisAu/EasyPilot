@@ -75,7 +75,11 @@ export function Sidebar({ active, mobileOpen, requestCount, onNavigate }: Sideba
           <Settings size={18} />
           <span>Instellingen</span>
         </button>
-        <button className="nav-item" type="button">
+        <button
+          className={active === 'Help & support' ? 'nav-item active' : 'nav-item'}
+          type="button"
+          onClick={() => onNavigate('Help & support')}
+        >
           <CircleHelp size={18} />
           <span>Help &amp; support</span>
         </button>
