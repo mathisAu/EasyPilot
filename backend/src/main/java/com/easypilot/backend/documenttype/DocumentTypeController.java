@@ -59,6 +59,12 @@ public class DocumentTypeController {
         return service.changeStatus(id, request.status());
     }
 
+    @PatchMapping("/{id}/folder")
+    @PreAuthorize("hasRole('ADMIN')")
+    public DocumentTypeDto moveToFolder(@PathVariable Long id, @RequestBody DocumentTypeFolderRequest request) {
+        return service.moveToFolder(id, request.folderId());
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

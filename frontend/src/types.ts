@@ -49,8 +49,15 @@ export interface DocumentType {
   latestDocumentId?: number | null;
   organizationId?: number | null;
   organizationName?: string | null;
+  folderId?: number | null;
+  folderName?: string | null;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface Folder {
+  id: number;
+  name: string;
 }
 
 export interface DocumentFile {

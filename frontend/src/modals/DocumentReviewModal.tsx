@@ -225,10 +225,9 @@ export function DocumentReviewModal({
                     className="review-delete-button"
                     onClick={handleDeleteDocument}
                     disabled={deleting}
-                    title="Document verwijderen"
-                    aria-label="Document verwijderen"
+                    title="Dit document verwijderen"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={13} /> {deleting ? 'Bezig...' : 'Verwijderen'}
                   </button>
                 </span>
               </div>

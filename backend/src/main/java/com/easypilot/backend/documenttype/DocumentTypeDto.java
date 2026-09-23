@@ -18,9 +18,17 @@ public record DocumentTypeDto(
         Long latestDocumentId,
         Long organizationId,
         String organizationName,
+        Long folderId,
+        String folderName,
         Instant createdAt,
         Instant updatedAt
 ) {
+
+    /** Folders are an internal admin tool, so a customer's view never carries them. */
+    public DocumentTypeDto withoutFolder() {
+        return new DocumentTypeDto(id, name, provider, status, fields, documentCount, latestDocumentFilename,
+                latestDocumentId, organizationId, organizationName, null, null, createdAt, updatedAt);
+    }
 
     public static DocumentTypeDto from(DocumentType entity) {
         Document latestDocument = entity.getDocuments().stream()
@@ -37,6 +45,8 @@ public record DocumentTypeDto(
                 latestDocument != null ? latestDocument.getId() : null,
                 entity.getOrganization() != null ? entity.getOrganization().getId() : null,
                 entity.getOrganization() != null ? entity.getOrganization().getName() : null,
+                entity.getFolder() != null ? entity.getFolder().getId() : null,
+                entity.getFolder() != null ? entity.getFolder().getName() : null,
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()
         );

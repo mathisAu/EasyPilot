@@ -1,9 +1,23 @@
-import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, Eye, FileCheck2, FileText, Search, Sparkles, SlidersHorizontal, X } from 'lucide-react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import {
+  Eye,
+  FileCheck2,
+  FileText,
+  Folder as FolderIcon,
+  FolderPlus,
+  Search,
+  Sparkles,
+  SlidersHorizontal,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { Metric } from '../components/Metric';
 import { StatusPill } from '../components/StatusPill';
 import { stages, toneFor } from '../data';
-import type { DocumentType, RequestStatus } from '../types';
+import { ApiError } from '../api/client';
+import { createFolder, deleteFolder, listFolders } from '../api/folders';
+import { moveDocumentTypeToFolder } from '../api/documentTypes';
+import type { DocumentType, Folder, RequestStatus } from '../types';
 
 interface RequestsPageProps {
   types: DocumentType[];
@@ -12,26 +26,15 @@ interface RequestsPageProps {
   statusFilter: RequestStatus | null;
   onToggleStatusFilter: (label: RequestStatus) => void;
   onViewType: (type: DocumentType) => void;
+  onDeleteType: (id: number) => void;
+  onTypeUpdated: (type: DocumentType) => void;
 }
 
-const NO_ORGANIZATION = 'Intern (geen klant)';
+type FolderFilter = 'all' | 'none' | number;
 
 function formatDate(value?: string): string {
   if (!value) return '—';
   return new Date(value).toLocaleDateString('nl-NL');
-}
-
-function groupByOrganization(types: DocumentType[]): [string, DocumentType[]][] {
-  const groups = new Map<string, DocumentType[]>();
-  for (const type of types) {
-    const key = type.organizationName ?? NO_ORGANIZATION;
-    groups.set(key, [...(groups.get(key) ?? []), type]);
-  }
-  return [...groups.entries()].sort(([a], [b]) => {
-    if (a === NO_ORGANIZATION) return 1;
-    if (b === NO_ORGANIZATION) return -1;
-    return a.localeCompare(b, 'nl');
-  });
 }
 
 export function RequestsPage({
@@ -41,33 +44,84 @@ export function RequestsPage({
   statusFilter,
   onToggleStatusFilter,
   onViewType,
+  onDeleteType,
+  onTypeUpdated,
 }: RequestsPageProps) {
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [folderFilter, setFolderFilter] = useState<FolderFilter>('all');
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [folderError, setFolderError] = useState('');
+
+  useEffect(() => {
+    listFolders()
+      .then(setFolders)
+      .catch((err) => setFolderError(err instanceof ApiError ? err.message : 'Kon mappen niet laden.'));
+  }, []);
+
   const filteredTypes = useMemo(
     () =>
       types
         .filter((type) =>
           `${type.organizationName ?? ''} ${type.provider} ${type.name}`.toLowerCase().includes(search.toLowerCase())
         )
-        .filter((type) => !statusFilter || type.status === statusFilter),
-    [types, search, statusFilter]
+        .filter((type) => !statusFilter || type.status === statusFilter)
+        .filter((type) => {
+          if (folderFilter === 'all') return true;
+          if (folderFilter === 'none') return !type.folderId;
+          return type.folderId === folderFilter;
+        }),
+    [types, search, statusFilter, folderFilter]
   );
-  const groups = useMemo(() => groupByOrganization(filteredTypes), [filteredTypes]);
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-
-  function toggleGroup(name: string) {
-    setCollapsed((current) => {
-      const next = new Set(current);
-      if (next.has(name)) next.delete(name);
-      else next.add(name);
-      return next;
-    });
-  }
 
   const inBehandeling = types.filter((type) =>
     (['In beoordeling', 'Inleren', 'Testen', 'Correctie nodig'] as RequestStatus[]).includes(type.status)
   ).length;
   const goedgekeurd = types.filter((type) => type.status === 'Goedgekeurd').length;
   const live = types.filter((type) => type.status === 'Live').length;
+
+  async function handleCreateFolder(event: FormEvent) {
+    event.preventDefault();
+    const name = newFolderName.trim();
+    if (!name) return;
+    setFolderError('');
+    try {
+      const folder = await createFolder(name);
+      setFolders((current) => [...current, folder].sort((a, b) => a.name.localeCompare(b.name, 'nl')));
+      setNewFolderName('');
+      setCreatingFolder(false);
+      setFolderFilter(folder.id);
+    } catch (err) {
+      setFolderError(err instanceof ApiError ? err.message : 'Map aanmaken is niet gelukt.');
+    }
+  }
+
+  async function handleDeleteFolder(folder: Folder) {
+    if (!window.confirm(`Map "${folder.name}" verwijderen? De documenttypes erin blijven gewoon bestaan.`)) return;
+    setFolderError('');
+    try {
+      await deleteFolder(folder.id);
+      setFolders((current) => current.filter((item) => item.id !== folder.id));
+      types
+        .filter((type) => type.folderId === folder.id)
+        .forEach((type) => onTypeUpdated({ ...type, folderId: null, folderName: null }));
+      setFolderFilter('all');
+    } catch (err) {
+      setFolderError(err instanceof ApiError ? err.message : 'Map verwijderen is niet gelukt.');
+    }
+  }
+
+  async function handleMove(type: DocumentType, value: string) {
+    setFolderError('');
+    try {
+      const updated = await moveDocumentTypeToFolder(type.id, value ? Number(value) : null);
+      onTypeUpdated(updated);
+    } catch (err) {
+      setFolderError(err instanceof ApiError ? err.message : 'Verplaatsen is niet gelukt.');
+    }
+  }
+
+  const activeFolder = typeof folderFilter === 'number' ? folders.find((folder) => folder.id === folderFilter) : null;
 
   return (
     <>
@@ -128,6 +182,73 @@ export function RequestsPage({
           </button>
         </div>
 
+        <div className="folder-bar" role="tablist" aria-label="Mappen">
+          <button
+            type="button"
+            className={`folder-chip ${folderFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setFolderFilter('all')}
+          >
+            Alle <span>{types.length}</span>
+          </button>
+          <button
+            type="button"
+            className={`folder-chip ${folderFilter === 'none' ? 'active' : ''}`}
+            onClick={() => setFolderFilter('none')}
+          >
+            Zonder map <span>{types.filter((type) => !type.folderId).length}</span>
+          </button>
+          {folders.map((folder) => (
+            <button
+              type="button"
+              key={folder.id}
+              className={`folder-chip ${folderFilter === folder.id ? 'active' : ''}`}
+              onClick={() => setFolderFilter(folder.id)}
+            >
+              <FolderIcon size={13} /> {folder.name}{' '}
+              <span>{types.filter((type) => type.folderId === folder.id).length}</span>
+            </button>
+          ))}
+          {creatingFolder ? (
+            <form className="folder-new-form" onSubmit={handleCreateFolder}>
+              <input
+                value={newFolderName}
+                onChange={(event) => setNewFolderName(event.target.value)}
+                placeholder="Naam van de map"
+                maxLength={60}
+                autoFocus
+              />
+              <button type="submit" className="folder-chip active" disabled={!newFolderName.trim()}>
+                Aanmaken
+              </button>
+              <button
+                type="button"
+                className="folder-chip"
+                onClick={() => {
+                  setCreatingFolder(false);
+                  setNewFolderName('');
+                }}
+              >
+                Annuleren
+              </button>
+            </form>
+          ) : (
+            <button type="button" className="folder-chip folder-chip-new" onClick={() => setCreatingFolder(true)}>
+              <FolderPlus size={13} /> Nieuwe map
+            </button>
+          )}
+          {activeFolder && (
+            <button
+              type="button"
+              className="folder-delete"
+              onClick={() => handleDeleteFolder(activeFolder)}
+              title={`Map "${activeFolder.name}" verwijderen`}
+            >
+              <Trash2 size={13} /> Map verwijderen
+            </button>
+          )}
+        </div>
+        {folderError && <p className="form-error">{folderError}</p>}
+
         <div className="table-toolbar">
           <div className="search-field">
             <Search size={17} />
@@ -156,67 +277,79 @@ export function RequestsPage({
           <table>
             <thead>
               <tr>
-                <th>Documenttype</th>
+                <th>Klant</th>
                 <th>Opdrachtgever</th>
+                <th>Documenttype</th>
                 <th>Aangeleverd</th>
                 <th>Status</th>
+                <th>Map</th>
                 <th aria-label="Acties" />
               </tr>
             </thead>
-            {groups.map(([organizationName, groupTypes]) => {
-              const isCollapsed = collapsed.has(organizationName);
-              return (
-                <tbody key={organizationName}>
-                  <tr className="group-row">
-                    <td colSpan={5}>
+            <tbody>
+              {filteredTypes.map((type) => (
+                <tr key={type.id}>
+                  <td>
+                    <div className="customer-cell">
+                      <span className="customer-logo">{type.provider.slice(0, 1)}</span>
+                      <strong>{type.organizationName ?? '—'}</strong>
+                    </div>
+                  </td>
+                  <td>{type.provider}</td>
+                  <td>{type.name}</td>
+                  <td>{formatDate(type.createdAt)}</td>
+                  <td>
+                    <StatusPill tone={toneFor(type.status)}>{type.status}</StatusPill>
+                  </td>
+                  <td>
+                    <select
+                      className="folder-select"
+                      value={type.folderId ?? ''}
+                      onChange={(event) => handleMove(type, event.target.value)}
+                      aria-label={`Map voor ${type.name}`}
+                    >
+                      <option value="">Geen map</option>
+                      {folders.map((folder) => (
+                        <option key={folder.id} value={folder.id}>
+                          {folder.name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <div className="row-actions">
                       <button
-                        type="button"
-                        className="group-toggle"
-                        onClick={() => toggleGroup(organizationName)}
-                        aria-expanded={!isCollapsed}
+                        className="row-action"
+                        onClick={() => onViewType(type)}
+                        aria-label={`Bekijk ${type.name}`}
+                        title="Bekijken"
                       >
-                        {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-                        <span className="customer-logo">{organizationName.slice(0, 1).toUpperCase()}</span>
-                        <strong>{organizationName}</strong>
-                        <span className="group-count">
-                          {groupTypes.length} {groupTypes.length === 1 ? 'aanvraag' : 'aanvragen'}
-                        </span>
+                        <Eye size={16} />
                       </button>
-                    </td>
-                  </tr>
-                  {!isCollapsed &&
-                    groupTypes.map((type) => (
-                      <tr key={type.id}>
-                        <td>
-                          <strong className="type-name">{type.name}</strong>
-                        </td>
-                        <td>{type.provider}</td>
-                        <td>{formatDate(type.createdAt)}</td>
-                        <td>
-                          <StatusPill tone={toneFor(type.status)}>{type.status}</StatusPill>
-                        </td>
-                        <td>
-                          <button
-                            className="row-action"
-                            onClick={() => onViewType(type)}
-                            aria-label={`Bekijk ${type.name}`}
-                            title="Bekijken"
-                          >
-                            <Eye size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              );
-            })}
+                      <button
+                        className="row-action row-action-danger"
+                        onClick={() => onDeleteType(type.id)}
+                        aria-label={`Verwijder ${type.name}`}
+                        title="Aanvraag verwijderen"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
           </table>
 
           {filteredTypes.length === 0 && (
             <div className="empty-state">
               <Search size={22} />
               <strong>Geen aanvragen gevonden</strong>
-              <span>Probeer een andere zoekopdracht of filter.</span>
+              <span>
+                {folderFilter === 'all'
+                  ? 'Probeer een andere zoekopdracht of filter.'
+                  : 'Deze map is leeg. Verplaats aanvragen hierheen via de kolom "Map".'}
+              </span>
             </div>
           )}
         </div>

@@ -12,6 +12,8 @@ interface BackendDocumentTypeDto {
   latestDocumentId: number | null;
   organizationId: number | null;
   organizationName: string | null;
+  folderId: number | null;
+  folderName: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -76,6 +78,8 @@ function mapType(dto: BackendDocumentTypeDto): DocumentType {
     latestDocumentId: dto.latestDocumentId,
     organizationId: dto.organizationId,
     organizationName: dto.organizationName,
+    folderId: dto.folderId,
+    folderName: dto.folderName,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
   };
@@ -137,6 +141,14 @@ export async function updateDocumentTypeStatus(id: number, status: RequestStatus
   const result = await apiFetch<BackendDocumentTypeDto>(`/api/document-types/${id}/status`, {
     method: 'PATCH',
     json: { status: STATUS_TO_BACKEND[status] },
+  });
+  return mapType(result);
+}
+
+export async function moveDocumentTypeToFolder(id: number, folderId: number | null): Promise<DocumentType> {
+  const result = await apiFetch<BackendDocumentTypeDto>(`/api/document-types/${id}/folder`, {
+    method: 'PATCH',
+    json: { folderId },
   });
   return mapType(result);
 }

@@ -145,6 +145,7 @@ function AppShell() {
       await deleteDocumentType(id);
       setDocumentTypes((current) => current.filter((type) => type.id !== id));
       setViewingType((current) => (current && current.id === id ? null : current));
+      setReviewingType((current) => (current && current.id === id ? null : current));
       notify(`${item.name} · ${item.provider} verwijderd`);
     } catch (err) {
       notify(err instanceof ApiError ? err.message : 'Verwijderen is niet gelukt.');
@@ -203,6 +204,10 @@ function AppShell() {
             statusFilter={statusFilter}
             onToggleStatusFilter={handleToggleStatusFilter}
             onViewType={setReviewingType}
+            onDeleteType={handleDeleteType}
+            onTypeUpdated={(updated) =>
+              setDocumentTypes((current) => current.map((type) => (type.id === updated.id ? updated : type)))
+            }
           />
         );
     }

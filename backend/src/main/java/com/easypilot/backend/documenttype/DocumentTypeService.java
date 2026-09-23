@@ -2,6 +2,8 @@ package com.easypilot.backend.documenttype;
 
 import com.easypilot.backend.common.ResourceNotFoundException;
 import com.easypilot.backend.document.Document;
+import com.easypilot.backend.folder.Folder;
+import com.easypilot.backend.folder.FolderRepository;
 import com.easypilot.backend.organization.Organization;
 import com.easypilot.backend.storage.FileStorageService;
 import com.easypilot.backend.user.AppUser;
@@ -16,10 +18,13 @@ public class DocumentTypeService {
 
     private final DocumentTypeRepository repository;
     private final FileStorageService fileStorageService;
+    private final FolderRepository folderRepository;
 
-    public DocumentTypeService(DocumentTypeRepository repository, FileStorageService fileStorageService) {
+    public DocumentTypeService(DocumentTypeRepository repository, FileStorageService fileStorageService,
+                               FolderRepository folderRepository) {
         this.repository = repository;
         this.fileStorageService = fileStorageService;
+        this.folderRepository = folderRepository;
     }
 
     @Transactional(readOnly = true)
@@ -27,12 +32,12 @@ public class DocumentTypeService {
         List<DocumentType> types = currentUser.getRole() == Role.ADMIN
                 ? repository.findAll()
                 : repository.findByOrganizationId(requireOrganizationId(currentUser));
-        return types.stream().map(DocumentTypeDto::from).toList();
+        return types.stream().map(type -> toDto(type, currentUser)).toList();
     }
 
     @Transactional(readOnly = true)
     public DocumentTypeDto findOneVisibleTo(Long id, AppUser currentUser) {
-        return DocumentTypeDto.from(getVisibleOrThrow(id, currentUser));
+        return toDto(getVisibleOrThrow(id, currentUser), currentUser);
     }
 
     @Transactional
@@ -49,7 +54,7 @@ public class DocumentTypeService {
             type.setStatus(RequestStatus.AANGELEVERD);
         }
 
-        return DocumentTypeDto.from(repository.save(type));
+        return toDto(repository.save(type), currentUser);
     }
 
     @Transactional
@@ -65,6 +70,16 @@ public class DocumentTypeService {
         DocumentType type = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Documenttype niet gevonden"));
         type.setStatus(status);
+        return DocumentTypeDto.from(repository.save(type));
+    }
+
+    @Transactional
+    public DocumentTypeDto moveToFolder(Long id, Long folderId) {
+        DocumentType type = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Documenttype niet gevonden"));
+        Folder folder = folderId == null ? null : folderRepository.findById(folderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Map niet gevonden"));
+        type.setFolder(folder);
         return DocumentTypeDto.from(repository.save(type));
     }
 
@@ -89,6 +104,11 @@ public class DocumentTypeService {
             }
         }
         return type;
+    }
+
+    private DocumentTypeDto toDto(DocumentType type, AppUser currentUser) {
+        DocumentTypeDto dto = DocumentTypeDto.from(type);
+        return currentUser.getRole() == Role.ADMIN ? dto : dto.withoutFolder();
     }
 
     private Long requireOrganizationId(AppUser currentUser) {

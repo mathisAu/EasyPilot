@@ -9,4 +9,6 @@ public interface DocumentTypeRepository extends JpaRepository<DocumentType, Long
     List<DocumentType> findByOrganizationId(Long organizationId);
 
     long countByOrganizationId(Long organizationId);
+
+    List<DocumentType> findByFolderId(Long folderId);
 }

@@ -1,6 +1,7 @@
 package com.easypilot.backend.documenttype;
 
 import com.easypilot.backend.document.Document;
+import com.easypilot.backend.folder.Folder;
 import com.easypilot.backend.organization.Organization;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
@@ -55,6 +56,10 @@ public class DocumentType {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id")
     private Organization organization;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "folder_id")
+    private Folder folder;
 
     @Column(updatable = false)
     private Instant createdAt;
@@ -134,5 +139,13 @@ public class DocumentType {
 
     public void setOrganization(Organization organization) {
         this.organization = organization;
+    }
+
+    public Folder getFolder() {
+        return folder;
+    }
+
+    public void setFolder(Folder folder) {
+        this.folder = folder;
     }
 }
