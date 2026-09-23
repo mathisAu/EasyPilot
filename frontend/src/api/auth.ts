@@ -32,6 +32,18 @@ export async function logout(): Promise<void> {
   await apiFetch<void>('/api/auth/logout', { method: 'POST' });
 }
 
+export async function forgotPassword(email: string): Promise<string> {
+  const result = await apiFetch<{ message: string }>('/api/auth/forgot-password', {
+    method: 'POST',
+    json: { email },
+  });
+  return result.message;
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  await apiFetch<void>('/api/auth/reset-password', { method: 'POST', json: { token, newPassword } });
+}
+
 export async function me(): Promise<AuthUser | null> {
   try {
     return await apiFetch<AuthUser>('/api/auth/me');

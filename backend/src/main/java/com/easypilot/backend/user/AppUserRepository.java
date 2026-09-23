@@ -13,4 +13,6 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     Optional<AppUser> findFirstByOrganizationId(Long organizationId);
 
     boolean existsByUsernameIgnoreCase(String username);
+
+    Optional<AppUser> findFirstByEmailIgnoreCase(String email);
 }

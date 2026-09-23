@@ -1,15 +1,32 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { LogIn, ShieldCheck } from 'lucide-react';
+import { LogIn, Mail, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { ApiError } from '../api/client';
-import { TotpRequiredError } from '../api/auth';
+import { TotpRequiredError, forgotPassword } from '../api/auth';
+
+type Mode = 'login' | 'totp' | 'forgot' | 'forgot-sent';
+
+function Brand() {
+  return (
+    <div className="login-brand">
+      <span className="login-brand-mark">➤</span>
+      <span>
+        Easy<span>Pilot</span>
+      </span>
+    </div>
+  );
+}
 
 export function LoginPage() {
   const { login } = useAuth();
+  const [mode, setMode] = useState<Mode>('login');
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [totpCode, setTotpCode] = useState('');
-  const [needsTotp, setNeedsTotp] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMessage, setForgotMessage] = useState('');
+
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const usernameRef = useRef<HTMLInputElement>(null);
@@ -27,10 +44,10 @@ export function LoginPage() {
     const effectivePassword = passwordRef.current?.value || password;
     const effectiveTotp = totpRef.current?.value || totpCode;
     try {
-      await login(effectiveUsername, effectivePassword, needsTotp ? effectiveTotp : undefined);
+      await login(effectiveUsername, effectivePassword, mode === 'totp' ? effectiveTotp : undefined);
     } catch (err) {
       if (err instanceof TotpRequiredError) {
-        setNeedsTotp(true);
+        setMode('totp');
         setTotpCode('');
       } else {
         setError(err instanceof ApiError ? err.message : 'Inloggen is niet gelukt. Probeer het opnieuw.');
@@ -40,25 +57,86 @@ export function LoginPage() {
     }
   }
 
+  async function handleForgotSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!forgotEmail.trim()) return;
+    setError('');
+    setSubmitting(true);
+    try {
+      const message = await forgotPassword(forgotEmail.trim());
+      setForgotMessage(message);
+      setMode('forgot-sent');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Er ging iets mis. Probeer het opnieuw.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (mode === 'forgot' || mode === 'forgot-sent') {
+    return (
+      <div className="login-page">
+        <div className="login-card">
+          <Brand />
+          <div className="login-heading">
+            <h1>Wachtwoord vergeten</h1>
+            <p className="modal-description">
+              {mode === 'forgot-sent'
+                ? forgotMessage
+                : 'Vul je e-mailadres in, dan sturen we een link om je wachtwoord opnieuw in te stellen.'}
+            </p>
+          </div>
+
+          {mode === 'forgot' && (
+            <form onSubmit={handleForgotSubmit}>
+              <label>
+                E-mailadres
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(event) => setForgotEmail(event.target.value)}
+                  autoFocus
+                  autoComplete="email"
+                  placeholder="naam@bedrijf.nl"
+                />
+              </label>
+              {error && <p className="form-error">{error}</p>}
+              <button type="submit" className="primary-button" disabled={submitting || !forgotEmail.trim()}>
+                <Mail size={16} /> {submitting ? 'Bezig...' : 'Resetlink versturen'}
+              </button>
+            </form>
+          )}
+
+          <button
+            type="button"
+            className="text-button"
+            onClick={() => {
+              setMode('login');
+              setError('');
+              setForgotEmail('');
+            }}
+          >
+            Terug naar inloggen
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="login-page">
       <form className="login-card" onSubmit={handleSubmit}>
-        <div className="login-brand">
-          <span className="login-brand-mark">➤</span>
-          <span>
-            Easy<span>Pilot</span>
-          </span>
-        </div>
+        <Brand />
         <div className="login-heading">
-          <h1>{needsTotp ? 'Verificatie' : 'Welkom terug'}</h1>
+          <h1>{mode === 'totp' ? 'Verificatie' : 'Welkom terug'}</h1>
           <p className="modal-description">
-            {needsTotp
+            {mode === 'totp'
               ? 'Voer de 6-cijferige code uit je authenticator-app in.'
               : 'Log in om je documenttypes te beheren.'}
           </p>
         </div>
 
-        {!needsTotp && (
+        {mode === 'login' && (
           <>
             <label>
               Gebruikersnaam
@@ -83,7 +161,7 @@ export function LoginPage() {
           </>
         )}
 
-        {needsTotp && (
+        {mode === 'totp' && (
           <label>
             Verificatiecode
             <input
@@ -103,18 +181,24 @@ export function LoginPage() {
         <button
           type="submit"
           className="primary-button"
-          disabled={submitting || (needsTotp ? totpCode.length !== 6 : !username || !password)}
+          disabled={submitting || (mode === 'totp' ? totpCode.length !== 6 : !username || !password)}
         >
-          {needsTotp ? <ShieldCheck size={16} /> : <LogIn size={16} />}{' '}
-          {submitting ? 'Bezig...' : needsTotp ? 'Verifiëren' : 'Inloggen'}
+          {mode === 'totp' ? <ShieldCheck size={16} /> : <LogIn size={16} />}{' '}
+          {submitting ? 'Bezig...' : mode === 'totp' ? 'Verifiëren' : 'Inloggen'}
         </button>
 
-        {needsTotp && (
+        {mode === 'login' && (
+          <button type="button" className="text-button" onClick={() => setMode('forgot')}>
+            Wachtwoord vergeten?
+          </button>
+        )}
+
+        {mode === 'totp' && (
           <button
             type="button"
             className="text-button"
             onClick={() => {
-              setNeedsTotp(false);
+              setMode('login');
               setTotpCode('');
               setError('');
             }}

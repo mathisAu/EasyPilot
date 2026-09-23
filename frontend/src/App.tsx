@@ -9,6 +9,7 @@ import { OrganizationsPage } from './pages/OrganizationsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SupportPage } from './pages/SupportPage';
 import { LoginPage } from './pages/LoginPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { DocumentTypeDrawer } from './modals/DocumentTypeDrawer';
 import { DocumentTypeFormModal } from './modals/DocumentTypeFormModal';
 import { DocumentReviewModal } from './modals/DocumentReviewModal';
@@ -22,6 +23,10 @@ import { listOrganizations } from './api/organizations';
 import { ApiError } from './api/client';
 
 export default function App() {
+  if (window.location.pathname === '/reset-password') {
+    return <ResetPasswordPage />;
+  }
+
   return (
     <AuthProvider>
       <AuthGate />
