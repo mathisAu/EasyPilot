@@ -3,8 +3,10 @@ package com.easypilot.backend.auth;
 import com.easypilot.backend.common.ApiErrorResponse;
 import com.easypilot.backend.user.AppUser;
 import com.easypilot.backend.user.AppUserRepository;
+import com.easypilot.backend.user.TotpService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,11 +29,14 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final AppUserRepository appUserRepository;
+    private final TotpService totpService;
     private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
-    public AuthController(AuthenticationManager authenticationManager, AppUserRepository appUserRepository) {
+    public AuthController(AuthenticationManager authenticationManager, AppUserRepository appUserRepository,
+                           TotpService totpService) {
         this.authenticationManager = authenticationManager;
         this.appUserRepository = appUserRepository;
+        this.totpService = totpService;
     }
 
     @PostMapping("/login")
@@ -40,12 +45,23 @@ public class AuthController {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.username(), request.password()));
 
+            AppUser appUser = appUserRepository.findByUsernameIgnoreCase(authentication.getName())
+                    .orElseThrow(() -> new IllegalStateException("Ingelogde gebruiker niet gevonden"));
+
+            if (appUser.isTotpEnabled()) {
+                String code = request.totpCode();
+                if (code == null || code.isBlank() || !totpService.verifyCode(appUser.getTotpSecret(), code)) {
+                    return ResponseEntity.status(HttpStatus.PRECONDITION_REQUIRED)
+                            .body(new TotpRequiredResponse(true, "Voer de 6-cijferige code uit je authenticator-app in"));
+                }
+            }
+
             SecurityContext context = SecurityContextHolder.createEmptyContext();
             context.setAuthentication(authentication);
             SecurityContextHolder.setContext(context);
             securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
-            return ResponseEntity.ok(toAuthResponse(authentication));
+            return ResponseEntity.ok(toAuthResponse(appUser));
         } catch (AuthenticationException ex) {
             return ResponseEntity.status(401).body(ApiErrorResponse.of("Ongeldige gebruikersnaam of wachtwoord"));
         }
@@ -57,14 +73,15 @@ public class AuthController {
                 || authentication instanceof AnonymousAuthenticationToken) {
             return ResponseEntity.status(401).body(ApiErrorResponse.of("Niet ingelogd"));
         }
-        return ResponseEntity.ok(toAuthResponse(authentication));
-    }
-
-    private AuthResponse toAuthResponse(Authentication authentication) {
         AppUser appUser = appUserRepository.findByUsernameIgnoreCase(authentication.getName())
                 .orElseThrow(() -> new IllegalStateException("Ingelogde gebruiker niet gevonden"));
+        return ResponseEntity.ok(toAuthResponse(appUser));
+    }
+
+    private AuthResponse toAuthResponse(AppUser appUser) {
         Long organizationId = appUser.getOrganization() != null ? appUser.getOrganization().getId() : null;
         String organizationName = appUser.getOrganization() != null ? appUser.getOrganization().getName() : null;
-        return new AuthResponse(appUser.getUsername(), appUser.getRole().name(), organizationId, organizationName);
+        return new AuthResponse(appUser.getUsername(), appUser.getDisplayName(), appUser.getEmail(),
+                appUser.getRole().name(), organizationId, organizationName, appUser.isTotpEnabled());
     }
 }

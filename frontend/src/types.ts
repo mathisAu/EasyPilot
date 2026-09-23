@@ -11,7 +11,7 @@ export type RequestStatus =
   | 'Goedgekeurd'
   | 'Live';
 
-export type PageKey = 'Dashboard' | 'Documentaanvragen' | 'Documenttypes' | 'Organisaties';
+export type PageKey = 'Dashboard' | 'Documentaanvragen' | 'Documenttypes' | 'Organisaties' | 'Instellingen';
 
 export interface UploadedFile {
   id: string;

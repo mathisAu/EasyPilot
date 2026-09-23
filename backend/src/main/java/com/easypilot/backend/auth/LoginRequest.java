@@ -1,4 +1,4 @@
 package com.easypilot.backend.auth;
 
-public record LoginRequest(String username, String password) {
+public record LoginRequest(String username, String password, String totpCode) {
 }

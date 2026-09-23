@@ -35,6 +35,18 @@ public class AppUser {
     @JoinColumn(name = "organization_id")
     private Organization organization;
 
+    @Column(name = "display_name")
+    private String displayName;
+
+    @Column
+    private String email;
+
+    @Column(name = "totp_secret")
+    private String totpSecret;
+
+    @Column(name = "totp_enabled", nullable = false, columnDefinition = "boolean not null default false")
+    private boolean totpEnabled = false;
+
     public Long getId() {
         return id;
     }
@@ -73,5 +85,37 @@ public class AppUser {
 
     public void setOrganization(Organization organization) {
         this.organization = organization;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getTotpSecret() {
+        return totpSecret;
+    }
+
+    public void setTotpSecret(String totpSecret) {
+        this.totpSecret = totpSecret;
+    }
+
+    public boolean isTotpEnabled() {
+        return totpEnabled;
+    }
+
+    public void setTotpEnabled(boolean totpEnabled) {
+        this.totpEnabled = totpEnabled;
     }
 }
