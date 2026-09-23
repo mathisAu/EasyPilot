@@ -7,6 +7,7 @@ import com.easypilot.backend.user.AppUserRepository;
 import com.easypilot.backend.user.CurrentUserService;
 import com.easypilot.backend.user.TotpService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -25,13 +28,16 @@ public class AccountController {
     private final CurrentUserService currentUserService;
     private final PasswordEncoder passwordEncoder;
     private final TotpService totpService;
+    private final AdminAccountService adminAccountService;
 
     public AccountController(AppUserRepository appUserRepository, CurrentUserService currentUserService,
-                              PasswordEncoder passwordEncoder, TotpService totpService) {
+                              PasswordEncoder passwordEncoder, TotpService totpService,
+                              AdminAccountService adminAccountService) {
         this.appUserRepository = appUserRepository;
         this.currentUserService = currentUserService;
         this.passwordEncoder = passwordEncoder;
         this.totpService = totpService;
+        this.adminAccountService = adminAccountService;
     }
 
     @PatchMapping("/profile")
@@ -94,6 +100,14 @@ public class AccountController {
         user.setTotpSecret(null);
         appUserRepository.save(user);
         return ResponseEntity.ok(toAuthResponse(user));
+    }
+
+    @DeleteMapping("/admin/users/{username}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public ResponseEntity<Void> deleteUser(@PathVariable String username, Authentication authentication) {
+        adminAccountService.deleteAccount(username, currentUserService.require(authentication));
+        return ResponseEntity.noContent().build();
     }
 
     private String blankToNull(String value) {

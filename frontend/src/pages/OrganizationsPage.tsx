@@ -1,4 +1,4 @@
-import { Eye, Plus } from 'lucide-react';
+import { Eye, Plus, Trash2 } from 'lucide-react';
 import { StatusPill } from '../components/StatusPill';
 import type { Organization } from '../types';
 
@@ -14,9 +14,10 @@ interface OrganizationsPageProps {
   organizations: Organization[];
   onAdd: () => void;
   onView: (organization: Organization) => void;
+  onDelete: (organization: Organization) => void;
 }
 
-export function OrganizationsPage({ organizations, onAdd, onView }: OrganizationsPageProps) {
+export function OrganizationsPage({ organizations, onAdd, onView, onDelete }: OrganizationsPageProps) {
   return (
     <>
       <section className="page-heading">
@@ -44,6 +45,16 @@ export function OrganizationsPage({ organizations, onAdd, onView }: Organization
             <button className="row-action" onClick={() => onView(organization)} aria-label={`Bekijk ${organization.name}`} title="Bekijken">
               <Eye size={16} />
             </button>
+            {organization.customerUsername && (
+              <button
+                className="row-action row-action-danger"
+                onClick={() => onDelete(organization)}
+                aria-label={`Verwijder account ${organization.customerUsername}`}
+                title="Account permanent verwijderen"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
           </div>
         ))}
       </section>

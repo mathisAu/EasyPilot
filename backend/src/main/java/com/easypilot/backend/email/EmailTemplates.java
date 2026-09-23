@@ -55,4 +55,14 @@ final class EmailTemplates {
                 + "Was jij dit niet? Neem dan zo snel mogelijk contact op met support.</p>";
         return shell("Je EasyPilot-wachtwoord is gewijzigd", body);
     }
+
+    static String registrationVerification(String name, String verificationUrl, int expiryHours) {
+        String body = "<h1 style=\"margin:0 0 4px;color:#152f55;font:800 20px 'Manrope',Arial,sans-serif;\">Bevestig je account</h1>"
+                + "<p style=\"margin:14px 0 0;color:#5d7189;font-size:14px;line-height:1.6;\">Hoi " + name + ",</p>"
+                + "<p style=\"margin:10px 0 0;color:#5d7189;font-size:14px;line-height:1.6;\">"
+                + "Klik op de knop hieronder om je e-mailadres te bevestigen en je EasyPilot-account te activeren.</p>"
+                + button(verificationUrl, "E-mailadres bevestigen")
+                + "<p style=\"margin:0;color:#9aabbd;font-size:12px;line-height:1.6;\">Deze link is " + expiryHours + " uur geldig en kan maar één keer gebruikt worden.</p>";
+        return shell("Bevestig je EasyPilot-account", body);
+    }
 }

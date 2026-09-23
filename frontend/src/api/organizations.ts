@@ -19,6 +19,10 @@ export async function getMyOrganization(): Promise<Organization> {
   return apiFetch<Organization>('/api/organizations/me');
 }
 
+export async function deleteUserAccount(username: string): Promise<void> {
+  await apiFetch<void>(`/api/account/admin/users/${encodeURIComponent(username)}`, { method: 'DELETE' });
+}
+
 export async function uploadMyLogo(file: File): Promise<Organization> {
   const formData = new FormData();
   formData.append('file', file);

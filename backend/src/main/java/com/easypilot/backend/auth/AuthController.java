@@ -4,6 +4,8 @@ import com.easypilot.backend.common.ApiErrorResponse;
 import com.easypilot.backend.user.AppUser;
 import com.easypilot.backend.user.AppUserRepository;
 import com.easypilot.backend.user.TotpService;
+import com.easypilot.backend.common.MessageResponse;
+import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -30,13 +33,15 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final AppUserRepository appUserRepository;
     private final TotpService totpService;
+    private final RegistrationService registrationService;
     private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 
     public AuthController(AuthenticationManager authenticationManager, AppUserRepository appUserRepository,
-                           TotpService totpService) {
+                           TotpService totpService, RegistrationService registrationService) {
         this.authenticationManager = authenticationManager;
         this.appUserRepository = appUserRepository;
         this.totpService = totpService;
+        this.registrationService = registrationService;
     }
 
     @PostMapping("/login")
@@ -47,6 +52,11 @@ public class AuthController {
 
             AppUser appUser = appUserRepository.findByUsernameIgnoreCase(authentication.getName())
                     .orElseThrow(() -> new IllegalStateException("Ingelogde gebruiker niet gevonden"));
+
+                if (!appUser.isEmailVerified()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiErrorResponse.of("Bevestig eerst je e-mailadres via de link in je e-mail."));
+                }
 
             if (appUser.isTotpEnabled()) {
                 String code = request.totpCode();
@@ -65,6 +75,17 @@ public class AuthController {
         } catch (AuthenticationException ex) {
             return ResponseEntity.status(401).body(ApiErrorResponse.of("Ongeldige gebruikersnaam of wachtwoord"));
         }
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<RegistrationResponse> register(@Valid @RequestBody RegisterRequest request,
+                                                          HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(registrationService.register(request, httpRequest.getRemoteAddr()));
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<MessageResponse> verifyEmail(@RequestParam String token) {
+        return ResponseEntity.ok(registrationService.verify(token));
     }
 
     @GetMapping("/me")

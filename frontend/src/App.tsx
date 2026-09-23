@@ -10,6 +10,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { SupportPage } from './pages/SupportPage';
 import { LoginPage } from './pages/LoginPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { DocumentTypeDrawer } from './modals/DocumentTypeDrawer';
 import { DocumentTypeFormModal } from './modals/DocumentTypeFormModal';
 import { DocumentReviewModal } from './modals/DocumentReviewModal';
@@ -19,12 +20,22 @@ import { ClientPortal } from './client/ClientPortal';
 import type { DocumentType, NotificationTargetType, Organization, PageKey, RequestStatus } from './types';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { listDocumentTypes, deleteDocumentType } from './api/documentTypes';
-import { listOrganizations } from './api/organizations';
+import { deleteUserAccount, listOrganizations } from './api/organizations';
 import { ApiError } from './api/client';
 
 export default function App() {
   if (window.location.pathname === '/reset-password') {
     return <ResetPasswordPage />;
+  }
+  if (window.location.pathname === '/verify-email') {
+    return <VerifyEmailPage />;
+  }
+  if (window.location.pathname === '/register') {
+    return (
+      <AuthProvider>
+        <LoginPage initialMode="register" />
+      </AuthProvider>
+    );
   }
 
   return (
@@ -85,7 +96,7 @@ function AppShell() {
       .then(setDocumentTypes)
       .catch((err) => notify(err instanceof ApiError ? err.message : 'Kon documenttypes niet laden.'));
     listOrganizations()
-      .then(setOrganizations)
+      .then((result) => setOrganizations(result.filter((organization) => organization.customerUsername)))
       .catch((err) => notify(err instanceof ApiError ? err.message : 'Kon organisaties niet laden.'));
   }, []);
 
@@ -169,6 +180,28 @@ function AppShell() {
     notify(`${organization.name} toegevoegd aan je werkruimte`);
   }
 
+  async function handleDeleteOrganizationAccount(organization: Organization) {
+    if (!organization.customerUsername) {
+      notify('Deze organisatie heeft geen klantaccount om te verwijderen.');
+      return;
+    }
+    const confirmed = window.confirm(
+      `Account "${organization.customerUsername}" permanent verwijderen? Dit kan niet ongedaan worden gemaakt.`,
+    );
+    if (!confirmed) return;
+
+    const previousOrganizations = organizations;
+    setOrganizations((current) => current.filter((item) => item.id !== organization.id));
+    try {
+      await deleteUserAccount(organization.customerUsername);
+      setViewingOrganization(null);
+      notify(`Account ${organization.customerUsername} permanent verwijderd`);
+    } catch (err) {
+      setOrganizations(previousOrganizations);
+      notify(err instanceof ApiError ? err.message : 'Account verwijderen is niet gelukt.');
+    }
+  }
+
   function handleNotificationNavigate(targetType: NotificationTargetType, targetId: number) {
     if (targetType === 'TICKET') {
       setFocusTicketId(targetId);
@@ -205,6 +238,7 @@ function AppShell() {
             organizations={organizations}
             onAdd={() => setShowAddOrganization(true)}
             onView={setViewingOrganization}
+            onDelete={handleDeleteOrganizationAccount}
           />
         );
       case 'Instellingen':

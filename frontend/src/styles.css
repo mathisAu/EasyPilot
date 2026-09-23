@@ -315,6 +315,37 @@ button.sidebar-footer:hover { background: #18355a; }
 .settings-qr-box { display: grid; place-items: center; padding: 20px; margin-top: 18px; border: 1px solid #e2e9f0; border-radius: 9px; background: #f8fafc; }
 .settings-secret { margin-top: 12px; padding: 10px 12px; color: #2c4564; border: 1px dashed #dce5ee; border-radius: 7px; background: #f8fafc; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 13px; text-align: center; letter-spacing: 1px; word-break: break-all; }
 
+/* Keep navigation and the account menu independent from long page content. */
+.sidebar { position: sticky; top: 0; height: 100vh; max-height: 100vh; align-self: flex-start; }
+.account-switcher { position: relative; margin-top: auto; padding-top: 10px; border-top: 1px solid #294363; }
+.account-switcher-panel { position: absolute; right: 0; bottom: calc(100% + 12px); left: 0; z-index: 10; padding: 10px; border: 1px solid #31557e; border-radius: 10px; background: #18355a; box-shadow: 0 16px 34px #07172b66; animation: account-menu-in .18s ease-out; transform-origin: bottom center; }
+.account-switcher-current { display: flex; align-items: center; gap: 9px; padding: 8px; border-bottom: 1px solid #31557e; }
+.account-switcher-current > div:last-child, .account-switcher-item-copy { display: grid; flex: 1; gap: 2px; min-width: 0; }
+.account-switcher-item-copy strong, .account-switcher-current strong { overflow: hidden; color: #fff; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.account-switcher-item-copy small, .account-switcher-current small { color: #91a9c5; font-size: 10px; }
+.avatar-sm { width: 26px; height: 26px; flex: 0 0 auto; font-size: 9px; }
+.account-switcher-item { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 34px; padding: 7px 8px; color: #c8d6e8; border: 0; border-radius: 6px; background: transparent; text-align: left; font-size: 11px; transition: background .15s ease, color .15s ease, transform .15s ease; }
+.account-switcher-item:hover { color: #fff; background: #205184; transform: translateX(2px); }
+.account-switcher-label { margin: 8px 8px 4px; color: #91a9c5; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.account-switcher-divider { height: 1px; margin: 5px 0; background: #2d4768; }
+.account-switcher-item.danger { color: #f0a18d; }
+.account-switcher-form { display: grid; gap: 10px; padding: 8px; }
+.account-switcher-form label { display: grid; gap: 5px; color: #c8d6e8; font-size: 11px; font-weight: 600; }
+.account-switcher-form input { width: 100%; padding: 8px 9px; color: #203a5b; border: 1px solid #dce5ee; border-radius: 6px; outline: 0; background: #fff; font-size: 12px; }
+.account-switcher-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.account-switcher-form .primary-button { padding: 8px 10px; font-size: 11px; }
+.account-switcher-form .text-button { color: #b9dfff; font-size: 11px; }
+.account-switcher-form label span { display: inline-flex; align-items: center; gap: 4px; }
+.account-switcher-success { margin: 0; color: #9de2bf; font-size: 11px; line-height: 1.5; }
+.registration-email { display: block; margin-top: 5px; color: #111827; font-weight: 800; }
+button.sidebar-footer { margin-top: 0; padding: 10px; border-top: 0; border-radius: 8px; }
+button.sidebar-footer:hover { background: #18355a; }
+@keyframes account-menu-in { from { opacity: 0; transform: translateY(7px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (max-width: 720px) {
+  .sidebar { position: fixed; top: 0; left: -252px; height: 100vh; }
+  .sidebar-open { left: 0; }
+}
+
 @keyframes message-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes ticket-row-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .ticket-list { display: grid; gap: 12px; margin-top: 20px; }

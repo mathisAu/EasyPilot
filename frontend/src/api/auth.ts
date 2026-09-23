@@ -17,6 +17,14 @@ export class TotpRequiredError extends Error {
   }
 }
 
+export interface RegisterRequest {
+  displayName: string;
+  email: string;
+  username: string;
+  password: string;
+  organizationName: string;
+}
+
 export async function login(username: string, password: string, totpCode?: string): Promise<AuthUser> {
   try {
     return await apiFetch<AuthUser>('/api/auth/login', { method: 'POST', json: { username, password, totpCode } });
@@ -26,6 +34,17 @@ export async function login(username: string, password: string, totpCode?: strin
     }
     throw err;
   }
+}
+
+export async function registerAccount(request: RegisterRequest): Promise<{ message: string; email: string }> {
+  return apiFetch<{ message: string; email: string }>('/api/auth/register', { method: 'POST', json: request });
+}
+
+export async function verifyEmail(token: string): Promise<string> {
+  const result = await apiFetch<{ message: string }>(
+    `/api/auth/verify-email?token=${encodeURIComponent(token)}`,
+  );
+  return result.message;
 }
 
 export async function logout(): Promise<void> {

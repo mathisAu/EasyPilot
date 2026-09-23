@@ -15,4 +15,6 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
     List<SupportTicket> findByOrganizationIdOrderByUpdatedAtDesc(Long organizationId);
 
     boolean existsByCreatedByIdAndCreatedAtAfter(Long createdById, Instant after);
+
+    List<SupportTicket> findByCreatedById(Long createdById);
 }
