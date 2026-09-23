@@ -2,6 +2,8 @@ package com.easypilot.backend.extraction;
 
 import com.easypilot.backend.document.Document;
 import com.easypilot.backend.document.DocumentRepository;
+import com.easypilot.backend.notification.NotificationService;
+import com.easypilot.backend.notification.NotificationTargetType;
 import com.easypilot.backend.storage.FileStorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,15 +24,18 @@ public class ExtractionTransactionSupport {
     private final ExtractedFieldRepository extractedFieldRepository;
     private final FileStorageService fileStorageService;
     private final GeminiClientHolder geminiClientHolder;
+    private final NotificationService notificationService;
 
     public ExtractionTransactionSupport(DocumentRepository documentRepository,
                                          ExtractedFieldRepository extractedFieldRepository,
                                          FileStorageService fileStorageService,
-                                         GeminiClientHolder geminiClientHolder) {
+                                         GeminiClientHolder geminiClientHolder,
+                                         NotificationService notificationService) {
         this.documentRepository = documentRepository;
         this.extractedFieldRepository = extractedFieldRepository;
         this.fileStorageService = fileStorageService;
         this.geminiClientHolder = geminiClientHolder;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -107,5 +112,19 @@ public class ExtractionTransactionSupport {
             document.setExtractionError(result.errorMessage());
         }
         documentRepository.save(document);
+
+        Long typeId = document.getDocumentType().getId();
+        String typeName = document.getDocumentType().getName();
+        if (result.isSuccess()) {
+            notificationService.notifyAllAdmins(
+                    "Extractie voltooid: " + typeName,
+                    document.getOriginalFilename() + " is verwerkt en klaar om te beoordelen.",
+                    NotificationTargetType.DOCUMENT_TYPE, typeId);
+        } else {
+            notificationService.notifyAllAdmins(
+                    "Extractie mislukt: " + typeName,
+                    document.getOriginalFilename() + " kon niet automatisch verwerkt worden.",
+                    NotificationTargetType.DOCUMENT_TYPE, typeId);
+        }
     }
 }

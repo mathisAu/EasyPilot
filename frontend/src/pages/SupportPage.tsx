@@ -6,7 +6,12 @@ import { listTickets, getTicket } from '../api/support';
 import { ApiError } from '../api/client';
 import type { TicketDetail, TicketSummary } from '../types';
 
-export function SupportPage() {
+interface SupportPageProps {
+  focusTicketId?: number | null;
+  onFocusHandled?: () => void;
+}
+
+export function SupportPage({ focusTicketId, onFocusHandled }: SupportPageProps) {
   const [tickets, setTickets] = useState<TicketSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewTicket, setShowNewTicket] = useState(false);
@@ -31,6 +36,14 @@ export function SupportPage() {
       setError(err instanceof ApiError ? err.message : 'Kon ticket niet laden.');
     }
   }
+
+  useEffect(() => {
+    if (focusTicketId != null) {
+      openTicketById(focusTicketId);
+      onFocusHandled?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusTicketId]);
 
   function handleCreated(ticket: TicketDetail) {
     setShowNewTicket(false);

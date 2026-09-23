@@ -28,7 +28,12 @@ const FAQ = [
   },
 ];
 
-export function HelpPage() {
+interface HelpPageProps {
+  focusTicketId?: number | null;
+  onFocusHandled?: () => void;
+}
+
+export function HelpPage({ focusTicketId, onFocusHandled }: HelpPageProps) {
   const [tickets, setTickets] = useState<TicketSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewTicket, setShowNewTicket] = useState(false);
@@ -52,6 +57,14 @@ export function HelpPage() {
       setError(err instanceof ApiError ? err.message : 'Kon ticket niet laden.');
     }
   }
+
+  useEffect(() => {
+    if (focusTicketId != null) {
+      openTicketById(focusTicketId);
+      onFocusHandled?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusTicketId]);
 
   function handleCreated(ticket: TicketDetail) {
     setShowNewTicket(false);

@@ -1,10 +1,13 @@
-import { Bell, ChevronRight, LogOut, Menu } from 'lucide-react';
+import { ChevronRight, LogOut, Menu } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { NotificationBell } from './NotificationBell';
+import type { NotificationTargetType } from '../types';
 
 interface TopbarProps {
   active: string;
   onToggleMobileNav: () => void;
   onLogout?: () => void;
+  onNotificationNavigate?: (targetType: NotificationTargetType, targetId: number) => void;
 }
 
 function initials(name: string): string {
@@ -17,7 +20,7 @@ function initials(name: string): string {
     .toUpperCase();
 }
 
-export function Topbar({ active, onToggleMobileNav, onLogout }: TopbarProps) {
+export function Topbar({ active, onToggleMobileNav, onLogout, onNotificationNavigate }: TopbarProps) {
   const { user } = useAuth();
   const displayName = user?.displayName?.trim() || user?.username || 'Gebruiker';
 
@@ -32,10 +35,7 @@ export function Topbar({ active, onToggleMobileNav, onLogout }: TopbarProps) {
         <strong>{active}</strong>
       </div>
       <div className="topbar-actions">
-        <button className="icon-button" aria-label="Meldingen">
-          <Bell size={19} />
-          <span className="notification-dot" />
-        </button>
+        {onNotificationNavigate && <NotificationBell onNavigate={onNotificationNavigate} />}
         {onLogout && (
           <button className="icon-button" aria-label="Uitloggen" title="Uitloggen" onClick={onLogout}>
             <LogOut size={18} />

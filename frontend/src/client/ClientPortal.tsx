@@ -13,7 +13,7 @@ import { useAuth } from '../auth/AuthContext';
 import { listDocumentTypes } from '../api/documentTypes';
 import { getMyOrganization } from '../api/organizations';
 import { ApiError } from '../api/client';
-import type { DocumentType, Organization } from '../types';
+import type { DocumentType, NotificationTargetType, Organization } from '../types';
 
 export function ClientPortal() {
   const { user, logout } = useAuth();
@@ -28,6 +28,7 @@ export function ClientPortal() {
 
   const [showWizard, setShowWizard] = useState(false);
   const [viewingType, setViewingType] = useState<DocumentType | null>(null);
+  const [focusTicketId, setFocusTicketId] = useState<number | null>(null);
 
   function notify(message: string) {
     setToast(message);
@@ -75,6 +76,19 @@ export function ClientPortal() {
     setViewingType((current) => (current && current.id === typeId ? { ...current, examples: count } : current));
   }
 
+  function handleNotificationNavigate(targetType: NotificationTargetType, targetId: number) {
+    if (targetType === 'TICKET') {
+      setFocusTicketId(targetId);
+      navigate('Hulp');
+    } else {
+      const type = documentTypes.find((item) => item.id === targetId);
+      if (type) {
+        setViewingType(type);
+      }
+      navigate('Documenten');
+    }
+  }
+
   function renderPage() {
     switch (active) {
       case 'Mijn organisatie':
@@ -82,7 +96,7 @@ export function ClientPortal() {
       case 'Instellingen':
         return <SettingsPage />;
       case 'Hulp':
-        return <HelpPage />;
+        return <HelpPage focusTicketId={focusTicketId} onFocusHandled={() => setFocusTicketId(null)} />;
       case 'Documenten':
       default:
         return (
@@ -110,6 +124,7 @@ export function ClientPortal() {
           active={active}
           onToggleMobileNav={() => setMobileOpen((open) => !open)}
           onLogout={logout}
+          onNotificationNavigate={handleNotificationNavigate}
         />
         <div className="page-wrap" key={active}>
           {renderPage()}
